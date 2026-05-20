@@ -768,7 +768,7 @@ const Header = () => {
     <>
       <TopBar />
       <header className={`sticky top-0 z-40 transition-all duration-300 ${scrolled ? 'bg-black/95 backdrop-blur-xl border-b border-white/5' : 'bg-black'}`}>
-        <div className="w-full mx-auto px-4 md:px-8 h-16 md:h-20 flex items-center justify-between gap-4">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8 h-16 md:h-20 flex items-center justify-between gap-4">
           <button onClick={() => setMenuOpen(true)} className="lg:hidden p-2 -ml-2 text-white" aria-label="Open menu">
             <Menu className="w-6 h-6" />
           </button>
@@ -1064,7 +1064,7 @@ const Hero = () => {
         </motion.div>
       </div>
 
-      <div className="relative z-10 w-full mx-auto px-4 md:px-8 pb-16 md:pb-24 w-full">
+      <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pb-16 md:pb-24 w-full">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
           className="max-w-2xl">
           <div className="flex items-center gap-3 mb-6">
@@ -1121,7 +1121,7 @@ const TrendingClubs = () => {
   const trending = ['rma', 'bar', 'mci', 'liv', 'psg', 'bay', 'mun', 'mia'].map(id => CLUBS.find(c => c.id === id));
   return (
     <section className="bg-zinc-950 py-16 md:py-24 border-y border-white/5">
-      <div className="w-full mx-auto px-4 md:px-8">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="flex items-end justify-between mb-10">
           <div>
             <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2">Top of the table</div>
@@ -1167,7 +1167,7 @@ const NewArrivals = () => {
   const { navigate } = useStore();
   return (
     <section className="bg-black py-16 md:py-24">
-      <div className="w-full mx-auto px-4 md:px-8">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="flex items-end justify-between mb-10">
           <div>
             <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2 flex items-center gap-2">
@@ -1195,7 +1195,7 @@ const PromoBanner = () => {
       <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
         <div className="text-[20rem] font-black tracking-tighter">GOAL</div>
       </div>
-      <div className="relative w-full mx-auto px-4 md:px-8 py-12 md:py-16 grid md:grid-cols-2 gap-8 items-center">
+      <div className="relative max-w-[1600px] mx-auto px-4 md:px-8 py-12 md:py-16 grid md:grid-cols-2 gap-8 items-center">
         <div>
           <div className="text-black/60 text-xs uppercase tracking-[0.4em] mb-3">Limited time</div>
           <h2 className="text-4xl md:text-6xl font-black uppercase text-black tracking-tighter leading-none">
@@ -1226,7 +1226,7 @@ const ShopByLeague = () => {
   const { navigate } = useStore();
   return (
     <section className="bg-black py-16 md:py-24">
-      <div className="w-full mx-auto px-4 md:px-8">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="mb-10">
           <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2">By competition</div>
           <h2 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tight">Shop by League</h2>
@@ -1265,7 +1265,7 @@ const FeaturedPlayers = () => {
   const { navigate } = useStore();
   return (
     <section className="bg-zinc-950 py-16 md:py-24 border-y border-white/5">
-      <div className="w-full mx-auto px-4 md:px-8">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="flex items-end justify-between mb-10">
           <div>
             <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2 flex items-center gap-2">
@@ -1315,7 +1315,7 @@ const BestSellers = () => {
   const { navigate } = useStore();
   return (
     <section className="bg-black py-16 md:py-24">
-      <div className="w-full mx-auto px-4 md:px-8">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="flex items-end justify-between mb-10">
           <div>
             <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2 flex items-center gap-2">
@@ -1343,7 +1343,7 @@ const RetroSection = () => {
       <div className="absolute inset-0 opacity-30">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_50%,#ca8a04_0%,transparent_50%)]" />
       </div>
-      <div className="relative w-full mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-12 items-center">
+      <div className="relative max-w-[1600px] mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-12 items-center">
         <div>
           <div className="text-amber-500 text-xs uppercase tracking-[0.4em] mb-3">The Vault</div>
           <h2 className="text-4xl md:text-7xl font-black uppercase text-white tracking-tighter leading-[0.9]">
@@ -1387,7 +1387,7 @@ const Testimonials = () => {
   ];
   return (
     <section className="bg-black py-16 md:py-24">
-      <div className="w-full mx-auto px-4 md:px-8">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="text-center mb-12">
           <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2">5-star rated</div>
           <h2 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tight">Worn worldwide</h2>
@@ -1427,7 +1427,7 @@ const Newsletter = () => {
   const [done, setDone] = useState(false);
   return (
     <section className="bg-lime-400 py-16 md:py-20">
-      <div className="w-full mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-8 items-center">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-8 items-center">
         <div>
           <h2 className="text-3xl md:text-5xl font-black uppercase text-black tracking-tighter leading-none">
             First in line.<br />
@@ -1602,7 +1602,7 @@ const ShopPage = () => {
     <div className="bg-black min-h-screen">
       {/* Page header */}
       <div className="border-b border-white/5 pt-8 md:pt-12 pb-6">
-        <div className="w-full mx-auto px-4 md:px-8">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8">
           <div className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">All Products</div>
           <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">
             {filters.league || filters.type || filters.clubName || 'Shop All'}
@@ -1611,7 +1611,7 @@ const ShopPage = () => {
         </div>
       </div>
 
-      <div className="w-full mx-auto px-4 md:px-8 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-8">
         <div className="flex gap-8">
           {/* Desktop filter sidebar */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -1710,7 +1710,7 @@ const ProductPage = () => {
   return (
     <div className="bg-black min-h-screen pb-16">
       {/* Breadcrumb */}
-      <div className="w-full mx-auto px-4 md:px-8 pt-6 text-xs text-white/40 flex items-center gap-2 flex-wrap">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 pt-6 text-xs text-white/40 flex items-center gap-2 flex-wrap">
         <button onClick={() => navigate('home')} className="hover:text-lime-400">Home</button>
         <span>/</span>
         <button onClick={() => navigate('shop')} className="hover:text-lime-400">Shop</button>
@@ -1720,7 +1720,7 @@ const ProductPage = () => {
         <span className="text-white/70 truncate">{product.kit} {product.version}</span>
       </div>
 
-      <div className="w-full mx-auto px-4 md:px-8 mt-6 grid lg:grid-cols-2 gap-8 lg:gap-16">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 mt-6 grid lg:grid-cols-2 gap-8 lg:gap-16">
         {/* Image gallery */}
         <div className="lg:sticky lg:top-28 lg:self-start">
           <div className="bg-zinc-950 aspect-square relative overflow-hidden rounded-sm group">
@@ -1955,7 +1955,7 @@ const ProductPage = () => {
 
       {/* Related */}
       {related.length > 0 && (
-        <div className="w-full mx-auto px-4 md:px-8 mt-20">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8 mt-20">
           <h2 className="text-2xl md:text-4xl font-black uppercase text-white tracking-tight mb-8">More from {product.clubName}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {related.map(p => <ProductCard key={p.id} product={p} />)}
@@ -2382,7 +2382,7 @@ const WishlistPage = () => {
   const items = PRODUCTS.filter(p => wishlist.includes(p.id));
   return (
     <div className="bg-black min-h-screen">
-      <div className="w-full mx-auto px-4 md:px-8 py-12">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-12">
         <div className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">Your collection</div>
         <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter mb-2">Wishlist</h1>
         <p className="text-white/50 mb-8">{items.length} items saved</p>
@@ -2699,7 +2699,7 @@ const Footer = () => {
   const { navigate } = useStore();
   return (
     <footer className="bg-zinc-950 border-t border-white/5 pt-16 pb-8">
-      <div className="w-full mx-auto px-4 md:px-8">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="grid md:grid-cols-12 gap-8 mb-12">
           <div className="md:col-span-4">
             <div className="font-black text-3xl text-white tracking-tight">MEHDI<span className="text-lime-400">SPORTS</span></div>
