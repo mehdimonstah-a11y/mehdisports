@@ -739,7 +739,7 @@ const TopBar = () => (
           <span>25/26 season kits — out now</span><span>•</span>
           <span>Player edition with custom name & number</span><span>•</span>
           <span>30-day returns guaranteed</span><span>•</span>
-          <span>Buy 2 get 15% off — code: BRACE15</span><span>•</span>
+          <span>Buy 2 get 35% off — code: BRACE35</span><span>•</span>
         </div>
       ))}
     </div>
@@ -776,7 +776,7 @@ const Header = () => {
           <button onClick={() => navigate('home')} className="flex items-baseline gap-1 group">
             <span className="font-black text-xl md:text-2xl tracking-tight text-white">MEHDI</span>
             <span className="font-black text-xl md:text-2xl tracking-tight text-lime-400">SPORTS</span>
-            <span className="hidden md:inline text-[9px] uppercase tracking-[0.3em] text-white/40 ml-1 self-end mb-1">/ EST 25</span>
+            <span className="hidden md:inline text-[9px] uppercase tracking-[0.3em] text-white/40 ml-1 self-end mb-1"></span>
           </button>
 
           <nav className="hidden lg:flex items-center gap-7 text-[13px] font-medium uppercase tracking-wide">
@@ -1067,10 +1067,7 @@ const Hero = () => {
       <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pb-16 md:pb-24 w-full">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
           className="max-w-2xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-px w-12 bg-lime-400" />
-            <span className="text-lime-400 text-xs uppercase tracking-[0.4em] font-semibold">Season 25 / 26</span>
-          </div>
+
           <h1 className="text-[3rem] sm:text-[4.5rem] md:text-[6rem] lg:text-[7.5rem] font-black leading-[0.85] tracking-tighter text-white uppercase">
             Worn by<br />
             <span className="italic font-serif font-normal text-lime-400">legends</span>.<br />
@@ -1100,18 +1097,7 @@ const Hero = () => {
         </motion.div>
       </div>
 
-      {/* Ticker bottom */}
-      <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/40 backdrop-blur py-3 z-20">
-        <div className="flex animate-marquee-slow whitespace-nowrap gap-8 text-white/40 text-xs uppercase tracking-[0.3em]">
-          {Array(3).fill(0).map((_, i) => (
-            <div key={i} className="flex gap-8 px-4">
-              {['Real Madrid', 'Barcelona', 'Manchester City', 'Liverpool', 'Bayern', 'PSG', 'Inter Miami', 'Argentina', 'Brazil', 'Al-Nassr'].map(c => (
-                <span key={c}>{c} <span className="text-lime-400/60">★</span></span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
+
     </section>
   );
 };
@@ -1202,7 +1188,7 @@ const PromoBanner = () => {
             Buy 2,<br />get 15% off.
           </h2>
           <p className="mt-4 text-black/70 max-w-md">
-            Stock up on the kit you love and a second for game day. Use code <span className="font-bold">BRACE15</span> at checkout.
+            Stock up on the kit you love and a second for game day. Use code <span className="font-bold">BRACE35</span> at checkout.
           </p>
           <button onClick={() => navigate('shop')}
             className="mt-6 bg-black hover:bg-zinc-800 text-white px-7 py-4 text-sm font-bold uppercase tracking-widest inline-flex items-center gap-2">
@@ -2122,8 +2108,8 @@ const CheckoutPage = () => {
   const total = subtotal + shippingCost + tax - discount.applied;
 
   const applyDiscount = () => {
-    if (discountInput.toUpperCase() === 'BRACE15' && cart.length >= 2) {
-      setDiscount({ code: 'BRACE15', applied: subtotal * 0.15 });
+    if (discountInput.toUpperCase() === 'BRACE35' && cart.length >= 2) {
+      setDiscount({ code: 'BRACE35', applied: subtotal * 0.15 });
     } else if (discountInput.toUpperCase() === 'WELCOME10') {
       setDiscount({ code: 'WELCOME10', applied: subtotal * 0.10 });
     } else {
