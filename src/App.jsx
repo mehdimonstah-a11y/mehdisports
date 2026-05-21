@@ -583,6 +583,7 @@ const useStore = () => useContext(StoreContext);
 const StoreProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [route, setRoute] = useState({ page: 'home' });
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -612,6 +613,14 @@ const StoreProvider = ({ children }) => {
     setWishlist(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
+  // Track recently viewed products (most recent first, max 8)
+  const trackView = (productId) => {
+    setRecentlyViewed(prev => {
+      const filtered = prev.filter(id => id !== productId);
+      return [productId, ...filtered].slice(0, 8);
+    });
+  };
+
   const navigate = (page, params = {}) => {
     setRoute({ page, ...params });
     setMenuOpen(false);
@@ -625,6 +634,7 @@ const StoreProvider = ({ children }) => {
     <StoreContext.Provider value={{
       cart, addToCart, updateQty, removeFromCart, cartCount, subtotal,
       wishlist, toggleWishlist,
+      recentlyViewed, trackView,
       route, navigate,
       cartOpen, setCartOpen,
       menuOpen, setMenuOpen,
@@ -731,21 +741,67 @@ const JerseySVG = ({ club, playerName, playerNumber, view = 'front', className =
 };
 
 // ---------- HEADER ----------------------------------------------------------
-const TopBar = () => (
-  <div className="bg-lime-400 text-black text-[11px] font-semibold tracking-wider uppercase py-2 overflow-hidden">
-    <div className="flex animate-marquee whitespace-nowrap gap-12">
-      {Array(2).fill(0).map((_, i) => (
-        <div key={i} className="flex gap-12 px-6">
-          <span>Free worldwide shipping over $120</span><span>•</span>
-          <span>25/26 season kits — out now</span><span>•</span>
-          <span>Player edition with custom name & number</span><span>•</span>
-          <span>30-day returns guaranteed</span><span>•</span>
-          <span>Buy 2 get 35% off — code: BRACE35</span><span>•</span>
+// Countdown timer hook — counts down to midnight tonight (resets daily for ever-present urgency)
+const useCountdown = () => {
+  const [time, setTime] = useState(() => {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    return Math.max(0, midnight - now);
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      setTime(Math.max(0, midnight - now));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const hours = Math.floor(time / (1000 * 60 * 60));
+  const minutes = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((time % (1000 * 60)) / 1000);
+  return { hours, minutes, seconds };
+};
+
+const TopBar = () => {
+  const { hours, minutes, seconds } = useCountdown();
+  const pad = (n) => String(n).padStart(2, '0');
+
+  return (
+    <div className="bg-lime-400 text-black text-[11px] font-bold tracking-wider uppercase py-2.5 overflow-hidden">
+      <div className="max-w-[1600px] mx-auto px-4 flex items-center justify-between gap-4">
+        {/* Left: deals marquee on desktop, hidden on mobile */}
+        <div className="hidden md:flex items-center gap-8 flex-1 min-w-0 overflow-hidden">
+          <div className="flex animate-marquee whitespace-nowrap gap-10">
+            {Array(2).fill(0).map((_, i) => (
+              <div key={i} className="flex gap-10">
+                <span>Free shipping over $120</span><span>•</span>
+                <span>25/26 season — out now</span><span>•</span>
+                <span>30-day returns</span><span>•</span>
+                <span>Custom name & number</span><span>•</span>
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
+
+        {/* Center / Right: Countdown — visible everywhere */}
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 mx-auto md:mx-0">
+          <span className="text-[10px] md:text-[11px]">🔥 Buy 2 get 35% off ends in</span>
+          <div className="flex items-center gap-1 font-mono font-black">
+            <span className="bg-black text-lime-400 px-1.5 py-0.5 rounded text-[11px] tabular-nums">{pad(hours)}</span>
+            <span>:</span>
+            <span className="bg-black text-lime-400 px-1.5 py-0.5 rounded text-[11px] tabular-nums">{pad(minutes)}</span>
+            <span>:</span>
+            <span className="bg-black text-lime-400 px-1.5 py-0.5 rounded text-[11px] tabular-nums">{pad(seconds)}</span>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Header = () => {
   const { navigate, cartCount, setCartOpen, menuOpen, setMenuOpen, setSearchOpen, wishlist } = useStore();
@@ -1412,6 +1468,30 @@ const Testimonials = () => {
 const Newsletter = () => {
   const [email, setEmail] = useState('');
   const [done, setDone] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+    // Capture email to Formspree → lands in inbox tagged as newsletter signup
+    try {
+      await fetch('https://formspree.io/f/xaqkobko', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          _subject: `📧 New Email Signup — ${email}`,
+          type: 'newsletter_signup',
+          source: 'homepage_newsletter',
+          email: email,
+          discount_code_given: 'WELCOME10',
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch (err) {
+      console.error('Newsletter capture failed:', err);
+    }
+    setDone(true);
+  };
+
   return (
     <section className="bg-lime-400 py-16 md:py-20">
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-8 items-center">
@@ -1424,7 +1504,7 @@ const Newsletter = () => {
             Get early access to drops, restock alerts, and a 10% welcome code.
           </p>
         </div>
-        <form onSubmit={e => { e.preventDefault(); setDone(true); }} className="flex flex-col sm:flex-row gap-2">
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
           {!done ? (
             <>
               <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
@@ -1449,6 +1529,7 @@ const Newsletter = () => {
 const HomePage = () => (
   <>
     <Hero />
+    <TrustBar />
     <TrendingClubs />
     <NewArrivals />
     <PromoBanner />
@@ -1460,6 +1541,39 @@ const HomePage = () => (
     
     <Newsletter />
   </>
+);
+
+// ---------- TRUST BAR — Sits above the fold for instant credibility -----------
+const TrustBar = () => (
+  <section className="bg-zinc-950 border-y border-white/5 py-6 md:py-8">
+    <div className="max-w-[1600px] mx-auto px-4 md:px-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+        {[
+          { icon: Truck, title: 'Free Shipping', sub: 'On orders over $120' },
+          { icon: Shield, title: 'Quality Guaranteed', sub: 'Premium AAA stitching' },
+          { icon: RotateCcw, title: 'Easy Returns', sub: '30-day money-back' },
+          { icon: Lock, title: 'Secure Checkout', sub: 'Interac & crypto' },
+        ].map((b, i) => (
+          <motion.div
+            key={b.title}
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.05 }}
+            className="flex items-center gap-3 md:gap-4"
+          >
+            <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-lime-400/10 border border-lime-400/30 flex items-center justify-center flex-shrink-0">
+              <b.icon className="w-4 h-4 md:w-5 md:h-5 text-lime-400" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-white font-bold text-sm md:text-base leading-tight">{b.title}</div>
+              <div className="text-white/50 text-[11px] md:text-xs leading-tight mt-0.5">{b.sub}</div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </section>
 );
 
 // ---------- SHOP PAGE -------------------------------------------------------
@@ -1671,9 +1785,36 @@ const ShopPage = () => {
   );
 };
 
+// ---------- RECENTLY VIEWED SECTION (Used on Product Detail Page) -----------
+const RecentlyViewedSection = ({ currentProductId }) => {
+  const { recentlyViewed } = useStore();
+  // Exclude the current product from "recently viewed"
+  const items = recentlyViewed
+    .filter(id => id !== currentProductId)
+    .map(id => PRODUCTS.find(p => p.id === id))
+    .filter(Boolean)
+    .slice(0, 4);
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="max-w-[1600px] mx-auto px-4 md:px-8 mt-16 md:mt-20">
+      <div className="flex items-end justify-between mb-6 md:mb-8">
+        <div>
+          <div className="text-lime-400 text-[10px] uppercase tracking-[0.3em] mb-1">Picking up where you left off</div>
+          <h2 className="text-2xl md:text-3xl font-black uppercase text-white tracking-tight">Recently Viewed</h2>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+        {items.map(p => <ProductCard key={p.id} product={p} />)}
+      </div>
+    </div>
+  );
+};
+
 // ---------- PRODUCT DETAIL PAGE ---------------------------------------------
 const ProductPage = () => {
-  const { route, addToCart, toggleWishlist, wishlist, navigate } = useStore();
+  const { route, addToCart, toggleWishlist, wishlist, navigate, trackView } = useStore();
   const product = PRODUCTS.find(p => p.id === route.productId) || PRODUCTS[0];
   const club = CLUBS.find(c => c.id === product.club);
 
@@ -1687,6 +1828,33 @@ const ProductPage = () => {
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const isWishlisted = wishlist.includes(product.id);
 
+  // Track this product view for "Recently viewed" section
+  useEffect(() => {
+    if (product?.id) trackView(product.id);
+  }, [product?.id]);
+
+  // Live viewer count — psychologically realistic (8-34 viewers, fluctuates every few seconds)
+  // Uses product.id as seed so it's stable per product but varies between them
+  const [viewerCount, setViewerCount] = useState(() => {
+    const seed = product.id.charCodeAt(1) || 12;
+    return 8 + (seed % 27);
+  });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setViewerCount(v => {
+        const drift = Math.floor(Math.random() * 5) - 2; // -2 to +2
+        return Math.max(6, Math.min(38, v + drift));
+      });
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Recent sales social proof — "X sold in last 24h" — stable per product
+  const recentSales = useMemo(() => {
+    const seed = (product.id.charCodeAt(1) || 0) + (product.isBest ? 18 : 0) + (product.isNew ? 12 : 0);
+    return 3 + (seed % 22); // 3-24 sales
+  }, [product.id, product.isBest, product.isNew]);
+
   const price = product.salePrice || product.price;
   const customizationFee = (playerName || playerNumber) ? 12 : 0;
   const badgeFee = addBadge ? 8 : 0;
@@ -1695,7 +1863,7 @@ const ProductPage = () => {
   const related = PRODUCTS.filter(p => p.club === product.club && p.id !== product.id).slice(0, 4);
 
   return (
-    <div className="bg-black min-h-screen pb-16">
+    <div className="bg-black min-h-screen pb-32 lg:pb-16">
       {/* Breadcrumb */}
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 pt-6 text-xs text-white/40 flex items-center gap-2 flex-wrap">
         <button onClick={() => navigate('home')} className="hover:text-lime-400">Home</button>
@@ -1783,16 +1951,48 @@ const ProductPage = () => {
             <span className="font-bold text-white">Klarna</span>
           </div>
 
-          {/* Stock */}
-          <div className="mt-6 flex items-center gap-2 text-sm">
-            {product.stock > 0 ? (
-              <>
-                <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse" />
-                <span className="text-lime-400">In stock</span>
-                {product.stock < 10 && <span className="text-white/50">— only {product.stock} left</span>}
-              </>
-            ) : (
-              <span className="text-red-400">Out of stock</span>
+          {/* Stock + Urgency Stack */}
+          <div className="mt-6 space-y-2.5">
+            {/* In stock indicator */}
+            <div className="flex items-center gap-2 text-sm">
+              {product.stock > 0 ? (
+                <>
+                  <div className="relative flex h-2 w-2">
+                    <div className="absolute inline-flex h-full w-full animate-ping rounded-full bg-lime-400 opacity-75" />
+                    <div className="relative inline-flex h-2 w-2 rounded-full bg-lime-400" />
+                  </div>
+                  <span className="text-lime-400 font-semibold">In stock & ready to ship</span>
+                </>
+              ) : (
+                <span className="text-red-400 font-semibold">Out of stock</span>
+              )}
+            </div>
+
+            {/* Live viewer count */}
+            <div className="flex items-center gap-2 text-xs text-white/60">
+              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+              <motion.span
+                key={viewerCount}
+                initial={{ opacity: 0.4 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <span className="text-white font-semibold">{viewerCount}</span> people viewing this right now
+              </motion.span>
+            </div>
+
+            {/* Recent sales social proof */}
+            <div className="flex items-center gap-2 text-xs text-white/60">
+              <Flame className="w-3.5 h-3.5 text-orange-400" />
+              <span><span className="text-white font-semibold">{recentSales}</span> sold in the last 24 hours</span>
+            </div>
+
+            {/* Low stock warning if applicable */}
+            {product.stock > 0 && product.stock < 10 && (
+              <div className="flex items-center gap-2 text-xs text-orange-400 bg-orange-400/5 border border-orange-400/20 px-3 py-2 mt-3">
+                <span className="text-base">⚠️</span>
+                <span className="font-semibold">Only {product.stock} left in stock — order soon</span>
+              </div>
             )}
           </div>
 
@@ -1949,6 +2149,26 @@ const ProductPage = () => {
           </div>
         </div>
       )}
+
+      {/* Recently Viewed */}
+      <RecentlyViewedSection currentProductId={product.id} />
+
+      {/* MOBILE STICKY ADD-TO-CART BAR — only on mobile */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-black/95 backdrop-blur-xl border-t border-white/10 px-4 py-3 pb-safe">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0 w-12 h-14 bg-zinc-900 rounded">
+            <JerseySVG club={product.club} className="w-full h-full" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] text-white/40 uppercase tracking-widest">Size {size}</div>
+            <div className="text-white font-bold text-lg leading-tight">${total.toFixed(2)}</div>
+          </div>
+          <button onClick={() => addToCart(product, { size, qty, playerName, playerNumber, addBadge })}
+            className="bg-lime-400 hover:bg-white text-black px-5 py-3.5 font-bold uppercase tracking-widest text-xs flex items-center gap-2 active:scale-95 transition-transform">
+            <ShoppingBag className="w-4 h-4" /> Add to Bag
+          </button>
+        </div>
+      </div>
 
       {/* Zoom modal */}
       <AnimatePresence>
@@ -2235,7 +2455,7 @@ const CheckoutPage = () => {
 
             <p className="text-white/60 text-sm mb-8">
               A confirmation with payment details has been sent to <span className="text-white">{info.email || 'your email'}</span>.
-              Questions? Message us on WhatsApp: <span className="text-lime-400 font-bold">+1 (416) 555-0114</span>
+              Questions? Message us on WhatsApp: <span className="text-lime-400 font-bold">+1 (437) 259-5733</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button onClick={() => navigate('order-tracking')}
@@ -2783,7 +3003,7 @@ const ContactPage = () => (
         <div className="space-y-6">
           {[
             { icon: Mail, label: 'Email', value: 'orders@mehdisports.com' },
-            { icon: Phone, label: 'WhatsApp', value: '+1 (416) 555-0114' },
+            { icon: Phone, label: 'WhatsApp', value: '+1 (437) 259-5733' },
             { icon: MapPin, label: 'HQ', value: 'Toronto, ON · Canada' },
             { icon: Globe, label: 'Hours', value: 'Mon–Fri · 9am–6pm ET' },
           ].map(c => (
@@ -3073,16 +3293,173 @@ const AppShell = () => {
 
       {/* WhatsApp Floating Button */}
       <WhatsAppButton />
+
+      {/* Exit Intent Popup — recovers abandoning visitors */}
+      <ExitIntentPopup />
     </div>
+  );
+};
+
+// ---------- EXIT INTENT POPUP ----------------------------------------------
+// Triggers when mouse moves toward closing the tab (desktop) or after 30s idle (mobile)
+// Offers WELCOME10 discount to capture email & save the session
+const ExitIntentPopup = () => {
+  const [open, setOpen] = useState(false);
+  const [shown, setShown] = useState(false); // Only show once per session
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (shown) return;
+
+    // Desktop: trigger when mouse leaves the top of the viewport (toward close button / address bar)
+    const handleMouseLeave = (e) => {
+      if (e.clientY <= 0 && !shown) {
+        setOpen(true);
+        setShown(true);
+      }
+    };
+
+    // Mobile: trigger after 35s of being on site (proxy for "about to leave")
+    const mobileTimeout = setTimeout(() => {
+      if (!shown && window.innerWidth < 768) {
+        setOpen(true);
+        setShown(true);
+      }
+    }, 35000);
+
+    document.addEventListener('mouseleave', handleMouseLeave);
+    return () => {
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      clearTimeout(mobileTimeout);
+    };
+  }, [shown]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+
+    // Send the captured email to Formspree → lands in your inbox
+    // Tagged as a "newsletter signup" so you can filter it from real orders in Gmail
+    try {
+      await fetch('https://formspree.io/f/xaqkobko', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          _subject: `📧 New Email Signup — ${email}`,
+          type: 'newsletter_signup',
+          source: 'exit_intent_popup',
+          email: email,
+          discount_code_given: 'WELCOME10',
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch (err) {
+      // Even if it fails, still show the code so user experience isn't broken
+      console.error('Email capture failed:', err);
+    }
+
+    setSubmitted(true);
+  };
+
+  const copyCode = () => {
+    navigator.clipboard.writeText('WELCOME10');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setOpen(false)} className="fixed inset-0 bg-black/80 z-[60] backdrop-blur-sm" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: 'spring', damping: 25 }}
+            className="fixed inset-x-4 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 top-1/2 -translate-y-1/2 z-[61] max-w-md w-full md:w-[440px] bg-black border-2 border-lime-400 overflow-hidden"
+          >
+            <button onClick={() => setOpen(false)} className="absolute top-3 right-3 z-10 text-white/60 hover:text-white p-1">
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header with glow */}
+            <div className="relative bg-lime-400 text-black p-6 md:p-8 text-center overflow-hidden">
+              <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none">
+                <div className="text-[8rem] font-black tracking-tighter">10%</div>
+              </div>
+              <div className="relative">
+                <div className="text-xs uppercase tracking-[0.4em] mb-2 font-bold">Wait — before you go</div>
+                <div className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none">
+                  Get 10% off<br />your first kit
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 md:p-8">
+              {!submitted ? (
+                <>
+                  <p className="text-white/70 text-sm text-center mb-5">
+                    Drop your email and we'll send you a code instantly. No spam — just first dibs on drops, restocks, and exclusive offers.
+                  </p>
+                  <form onSubmit={handleSubmit} className="space-y-3">
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      autoFocus
+                      className="w-full bg-zinc-950 border border-white/10 text-white px-4 py-3.5 outline-none focus:border-lime-400 text-center"
+                    />
+                    <button type="submit"
+                      className="w-full bg-lime-400 hover:bg-white text-black py-4 font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-colors">
+                      Send me the code <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </form>
+                  <button onClick={() => setOpen(false)} className="w-full text-center text-xs text-white/40 hover:text-white/70 mt-4 underline">
+                    No thanks, I'll pay full price
+                  </button>
+                </>
+              ) : (
+                <div className="text-center">
+                  <div className="w-14 h-14 bg-lime-400 rounded-full mx-auto flex items-center justify-center mb-4">
+                    <Check className="w-7 h-7 text-black" />
+                  </div>
+                  <h3 className="text-2xl font-black uppercase text-white mb-3">You're in.</h3>
+                  <p className="text-white/60 text-sm mb-5">Your code is below — copy it and use at checkout.</p>
+                  <div className="bg-zinc-950 border-2 border-dashed border-lime-400 p-4 mb-4">
+                    <div className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Your discount code</div>
+                    <div className="flex items-center justify-center gap-3">
+                      <span className="text-2xl font-black text-lime-400 tracking-wider">WELCOME10</span>
+                      <button onClick={copyCode} className="bg-lime-400 text-black px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:bg-white">
+                        {copied ? '✓ Copied' : 'Copy'}
+                      </button>
+                    </div>
+                  </div>
+                  <button onClick={() => setOpen(false)}
+                    className="w-full bg-white hover:bg-lime-400 text-black py-3.5 font-bold uppercase tracking-widest text-sm">
+                    Start shopping
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
 
 // ---------- WHATSAPP FLOATING BUTTON --------------------------------------
 // Replace YOUR_NUMBER with your real WhatsApp Business number (with country code, no + or spaces)
-// Example: 14165550114 for +1 (416) 555-0114
+// Example: 14165550114 for +1 (437) 259-5733
 const WhatsAppButton = () => {
   const [open, setOpen] = useState(false);
-  const WHATSAPP_NUMBER = '14165550114'; // <-- CHANGE THIS to your real number
+  const WHATSAPP_NUMBER = '14372595733'; // Your real WhatsApp Business number
   const defaultMessage = encodeURIComponent("Hi! I'm interested in ordering from MehdiSports. Can you help me?");
   const link = `https://wa.me/${WHATSAPP_NUMBER}?text=${defaultMessage}`;
 
