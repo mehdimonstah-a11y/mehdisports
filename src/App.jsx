@@ -1104,19 +1104,78 @@ const Hero = () => {
         </svg>
       </div>
 
-      {/* Floating jersey */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[55%] md:w-[45%] max-w-[600px] opacity-90 pointer-events-none">
+      {/* Floating hero — 5 GOATs in fanned-out trading card layout */}
+      {/*
+        TO ADD YOUR PLAYER IMAGES:
+        1. Save your 5 player photos to /public folder of your project with these EXACT names:
+           - /public/player-ronaldo.png  (or .jpg — works either way)
+           - /public/player-messi.png
+           - /public/player-mbappe.png
+           - /public/player-neymar.png
+           - /public/player-yamal.png
+        2. Best results: portrait orientation (taller than wide), ~600×800px each
+        3. The images you uploaded in chat (the 5 player photos) are exactly the right vibe
+      */}
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[62%] md:w-[58%] lg:w-[55%] max-w-[780px] pointer-events-none">
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
+          className="relative"
         >
+          {/* Glow halo behind */}
+          <div className="absolute inset-0 bg-lime-400/20 blur-[120px] rounded-full scale-90" />
+
+          {/* Fan layout — 5 player cards arranged like a hand of cards */}
           <motion.div
-            animate={{ y: [0, -20, 0] }}
+            animate={{ y: [0, -10, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            className="relative aspect-[4/5] w-full"
           >
-            <JerseySVG club="rma" view="back" playerName="MBAPPÉ" playerNumber={9}
-              className="w-full drop-shadow-[0_25px_80px_rgba(190,242,100,0.3)]" />
+            {[
+              { src: '/player-ronaldo.png', name: 'Ronaldo', rotate: -18, x: '0%', y: '8%', z: 1, delay: 0 },
+              { src: '/player-messi.png', name: 'Messi', rotate: -8, x: '15%', y: '2%', z: 2, delay: 0.1 },
+              { src: '/player-mbappe.png', name: 'Mbappé', rotate: 0, x: '30%', y: '0%', z: 5, delay: 0.2 },
+              { src: '/player-neymar.png', name: 'Neymar', rotate: 8, x: '45%', y: '2%', z: 2, delay: 0.3 },
+              { src: '/player-yamal.png', name: 'Yamal', rotate: 18, x: '60%', y: '8%', z: 1, delay: 0.4 },
+            ].map((p, i) => (
+              <motion.div
+                key={p.name}
+                initial={{ opacity: 0, y: 40, rotate: 0 }}
+                animate={{ opacity: 1, y: 0, rotate: p.rotate }}
+                transition={{ duration: 0.7, delay: 0.5 + p.delay, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  position: 'absolute',
+                  left: p.x,
+                  top: p.y,
+                  width: '42%',
+                  zIndex: p.z,
+                }}
+              >
+                <div className="relative aspect-[3/4] bg-zinc-900 border-2 border-white/10 overflow-hidden shadow-2xl">
+                  <img
+                    src={p.src}
+                    alt={p.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback if image not added yet — show gradient with name
+                      e.target.style.display = 'none';
+                      e.target.nextElementSibling.style.display = 'flex';
+                    }}
+                  />
+                  {/* Fallback gradient panel until image is added */}
+                  <div className="absolute inset-0 hidden flex-col items-center justify-end bg-gradient-to-br from-zinc-800 to-zinc-950 p-3">
+                    <div className="text-lime-400 text-[10px] uppercase tracking-widest font-bold">Add</div>
+                    <div className="text-white text-base font-black uppercase">{p.name}</div>
+                  </div>
+                  {/* Subtle bottom gradient + name label on real image */}
+                  <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
+                  <div className="absolute bottom-2 inset-x-0 text-center">
+                    <div className="text-white text-[11px] md:text-sm font-black uppercase tracking-wider">{p.name}</div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
         </motion.div>
       </div>
@@ -1131,7 +1190,7 @@ const Hero = () => {
             Built for<br />you.
           </h1>
           <p className="mt-6 text-white/60 text-base md:text-lg max-w-md leading-relaxed">
-            Authentic player editions, fan kits and retro classics from every league that matters.
+            Premium quality player editions, fan kits and retro classics from every league that matters.
             Custom name & number on every jersey.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -1149,7 +1208,6 @@ const Hero = () => {
           <div className="mt-12 flex items-center gap-8 text-white/50 text-xs">
             <div className="flex items-center gap-2"><Truck className="w-4 h-4" /> Free shipping $120+</div>
             <div className="flex items-center gap-2"><RotateCcw className="w-4 h-4" /> 30-day returns</div>
-            <div className="hidden md:flex items-center gap-2"><Shield className="w-4 h-4" /> Authentic guarantee</div>
           </div>
         </motion.div>
       </div>
@@ -1242,7 +1300,7 @@ const PromoBanner = () => {
         <div>
           <div className="text-black/60 text-xs uppercase tracking-[0.4em] mb-3">Limited time</div>
           <h2 className="text-4xl md:text-6xl font-black uppercase text-black tracking-tighter leading-none">
-            Buy 2,<br />get 15% off.
+            Buy 2,<br />get 35% off.
           </h2>
           <p className="mt-4 text-black/70 max-w-md">
             Stock up on the kit you love and a second for game day. Use code <span className="font-bold">BRACE35</span> at checkout.
@@ -1550,7 +1608,7 @@ const TrustBar = () => (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
         {[
           { icon: Truck, title: 'Free Shipping', sub: 'On orders over $120' },
-          { icon: Shield, title: 'Quality Guaranteed', sub: 'Premium AAA stitching' },
+          { icon: Award, title: 'Premium Quality', sub: 'Top-tier AAA+ stitching' },
           { icon: RotateCcw, title: 'Easy Returns', sub: '30-day money-back' },
           { icon: Lock, title: 'Secure Checkout', sub: 'Interac & crypto' },
         ].map((b, i) => (
