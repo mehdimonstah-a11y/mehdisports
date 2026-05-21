@@ -5,6 +5,7 @@ import {
   Star, Truck, Shield, RotateCcw, Plus, Minus, Check, ArrowRight, ArrowUpRight,
   Mail, MapPin, Phone, User, Filter,
   Trash2, ZoomIn, Tag, Award, Flame, Sparkles, Globe, CreditCard, Lock,
+  MessageCircle,
 } from 'lucide-react';
 
 /* ============================================================================
@@ -2096,12 +2097,15 @@ const CartDrawer = () => {
 const CheckoutPage = () => {
   const { cart, subtotal, navigate } = useStore();
   const [step, setStep] = useState(1);
-  const [info, setInfo] = useState({ email: '', firstName: '', lastName: '', address: '', city: '', zip: '', country: 'United States' });
+  const [info, setInfo] = useState({ email: '', firstName: '', lastName: '', address: '', city: '', zip: '', country: 'Canada', phone: '' });
   const [shipping, setShipping] = useState('standard');
   const [discount, setDiscount] = useState({ code: '', applied: 0 });
   const [discountInput, setDiscountInput] = useState('');
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber] = useState('MS' + Math.floor(Math.random() * 900000 + 100000));
+  const [paymentMethod, setPaymentMethod] = useState(''); // 'interac' | 'crypto'
+  const [cryptoCurrency, setCryptoCurrency] = useState('USDT'); // USDT | BTC | ETH
+  const [submitting, setSubmitting] = useState(false);
 
   const shippingCost = subtotal >= 120 ? 0 : (shipping === 'express' ? 18 : 9);
   const tax = (subtotal - discount.applied) * 0.13;
@@ -2109,11 +2113,62 @@ const CheckoutPage = () => {
 
   const applyDiscount = () => {
     if (discountInput.toUpperCase() === 'BRACE35' && cart.length >= 2) {
-      setDiscount({ code: 'BRACE35', applied: subtotal * 0.15 });
+      setDiscount({ code: 'BRACE35', applied: subtotal * 0.35 });
     } else if (discountInput.toUpperCase() === 'WELCOME10') {
       setDiscount({ code: 'WELCOME10', applied: subtotal * 0.10 });
     } else {
       alert('Invalid code or conditions not met');
+    }
+  };
+
+  // Submit the order — sends email to admin via Formspree-style endpoint
+  // Replace YOUR_FORMSPREE_ID with your real Formspree form ID once you sign up at formspree.io (free, 50 submissions/mo)
+  const submitOrder = async () => {
+    if (!paymentMethod) {
+      alert('Please select a payment method');
+      return;
+    }
+    setSubmitting(true);
+
+    const orderPayload = {
+      order_number: orderNumber,
+      customer: info,
+      items: cart.map(i => ({
+        name: i.product.name,
+        size: i.size,
+        qty: i.qty,
+        playerName: i.playerName || '—',
+        playerNumber: i.playerNumber || '—',
+        price: i.product.salePrice || i.product.price,
+      })),
+      subtotal: subtotal.toFixed(2),
+      shipping: shippingCost.toFixed(2),
+      tax: tax.toFixed(2),
+      discount: discount.applied.toFixed(2),
+      discount_code: discount.code || 'none',
+      total: total.toFixed(2),
+      payment_method: paymentMethod,
+      crypto_currency: paymentMethod === 'crypto' ? cryptoCurrency : null,
+      shipping_method: shipping,
+      _subject: `New MehdiSports Order — ${orderNumber} — $${total.toFixed(2)}`,
+    };
+
+    try {
+      // Formspree endpoint — sends order details to your inbox
+      const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xaqkobko';
+
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(orderPayload),
+      });
+      if (!res.ok) throw new Error('Order submission failed');
+
+      setOrderComplete(true);
+    } catch (e) {
+      alert('Something went wrong submitting your order. Please contact us on WhatsApp or email orders@mehdisports.com and we\'ll process your order manually.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -2140,14 +2195,47 @@ const CheckoutPage = () => {
             <div className="w-16 h-16 bg-lime-400 rounded-full mx-auto flex items-center justify-center mb-6">
               <Check className="w-8 h-8 text-black" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-black uppercase text-white mb-3">Order confirmed</h1>
-            <p className="text-white/60 mb-6">Thanks {info.firstName || 'champ'}. We've got it from here.</p>
+            <h1 className="text-3xl md:text-4xl font-black uppercase text-white mb-3">Order placed</h1>
+            <p className="text-white/60 mb-6">Thanks {info.firstName || 'champ'}. One more step to confirm.</p>
+
             <div className="bg-black p-5 mb-6">
               <div className="text-xs uppercase tracking-widest text-white/40 mb-1">Order Number</div>
               <div className="text-2xl font-black text-lime-400 tracking-wider">{orderNumber}</div>
             </div>
+
+            {/* Payment-specific instructions */}
+            {paymentMethod === 'interac' && (
+              <div className="bg-lime-400/10 border-2 border-lime-400/40 p-5 mb-6 text-left">
+                <div className="text-xs uppercase tracking-widest text-lime-400 font-bold mb-3">⚡ Complete your Interac e-Transfer</div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between text-white"><span className="text-white/60">Send to:</span><span className="font-bold">orders@mehdisports.com</span></div>
+                  <div className="flex justify-between text-white"><span className="text-white/60">Amount:</span><span className="font-bold">${total.toFixed(2)} CAD</span></div>
+                  <div className="flex justify-between text-white"><span className="text-white/60">Message:</span><span className="font-bold">Order {orderNumber}</span></div>
+                  <div className="flex justify-between text-white"><span className="text-white/60">Security Q:</span><span className="font-bold">mehdisports</span></div>
+                </div>
+                <div className="text-[11px] text-white/50 mt-4 pt-3 border-t border-white/10">
+                  Once we receive your transfer (1-2 hours), we'll send shipping confirmation. Your kit ships same-day if paid before 6PM EST.
+                </div>
+              </div>
+            )}
+
+            {paymentMethod === 'crypto' && (
+              <div className="bg-lime-400/10 border-2 border-lime-400/40 p-5 mb-6 text-left">
+                <div className="text-xs uppercase tracking-widest text-lime-400 font-bold mb-3">⚡ Complete your {cryptoCurrency} payment</div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between text-white"><span className="text-white/60">Currency:</span><span className="font-bold">{cryptoCurrency}</span></div>
+                  <div className="flex justify-between text-white"><span className="text-white/60">Amount:</span><span className="font-bold">${(total * 0.95).toFixed(2)} USD</span></div>
+                  <div className="flex justify-between text-white"><span className="text-white/60">Order ref:</span><span className="font-bold">{orderNumber}</span></div>
+                </div>
+                <div className="text-[11px] text-white/50 mt-4 pt-3 border-t border-white/10">
+                  Check your email — we've sent your wallet address and exact crypto amount. Send within 30 minutes to lock in the rate. Ships within 1 hour of on-chain confirmation.
+                </div>
+              </div>
+            )}
+
             <p className="text-white/60 text-sm mb-8">
-              A confirmation has been sent to <span className="text-white">{info.email || 'your email'}</span>. You'll get tracking info as soon as your kit ships.
+              A confirmation with payment details has been sent to <span className="text-white">{info.email || 'your email'}</span>.
+              Questions? Message us on WhatsApp: <span className="text-lime-400 font-bold">+1 (416) 555-0114</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button onClick={() => navigate('order-tracking')}
@@ -2219,6 +2307,30 @@ const CheckoutPage = () => {
                     className="w-full bg-zinc-950 border border-white/10 text-white px-4 py-3 outline-none focus:border-lime-400" />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-white/60 block mb-1.5">Country</label>
+                  <select value={info.country} onChange={e => setInfo({...info, country: e.target.value})}
+                    className="w-full bg-zinc-950 border border-white/10 text-white px-4 py-3 outline-none focus:border-lime-400">
+                    <option>Canada</option>
+                    <option>United States</option>
+                    <option>United Kingdom</option>
+                    <option>Australia</option>
+                    <option>France</option>
+                    <option>Germany</option>
+                    <option>Spain</option>
+                    <option>Italy</option>
+                    <option>Netherlands</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-white/60 block mb-1.5">Phone</label>
+                  <input type="tel" value={info.phone} onChange={e => setInfo({...info, phone: e.target.value})}
+                    placeholder="+1 (416) ..."
+                    className="w-full bg-zinc-950 border border-white/10 text-white px-4 py-3 outline-none focus:border-lime-400" />
+                </div>
+              </div>
               <button onClick={() => setStep(2)}
                 className="w-full bg-lime-400 hover:bg-white text-black py-4 font-bold uppercase tracking-widest mt-4">
                 Continue to shipping
@@ -2259,35 +2371,147 @@ const CheckoutPage = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2 p-3 bg-zinc-950 border border-white/10">
                 <Lock className="w-4 h-4 text-lime-400" />
-                <span className="text-xs text-white/60">Secured by Stripe · 256-bit SSL</span>
+                <span className="text-xs text-white/60">All payments verified manually within 1-2 hours · 256-bit SSL</span>
               </div>
-              <div>
-                <label className="text-xs uppercase tracking-widest text-white/60 block mb-1.5">Card Number</label>
-                <div className="relative">
-                  <input placeholder="1234 1234 1234 1234"
-                    className="w-full bg-zinc-950 border border-white/10 text-white px-4 py-3 outline-none focus:border-lime-400" />
-                  <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+
+              <div className="text-xs uppercase tracking-widest text-white/60 mb-2">Choose payment method</div>
+
+              {/* Interac e-Transfer */}
+              <label className={`block cursor-pointer border-2 p-4 transition-colors ${paymentMethod === 'interac' ? 'border-lime-400 bg-lime-400/5' : 'border-white/10 hover:border-white/30'}`}>
+                <input type="radio" name="payment" value="interac" checked={paymentMethod === 'interac'}
+                  onChange={() => setPaymentMethod('interac')} className="sr-only" />
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${paymentMethod === 'interac' ? 'border-lime-400' : 'border-white/30'}`}>
+                    {paymentMethod === 'interac' && <div className="w-2.5 h-2.5 rounded-full bg-lime-400" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-white font-semibold flex items-center gap-2">
+                        Interac e-Transfer
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-lime-400 text-black px-1.5 py-0.5">Canada</span>
+                      </div>
+                      <div className="text-xs text-lime-400 font-bold">No Fees</div>
+                    </div>
+                    <div className="text-xs text-white/60">Send from any Canadian bank. Instant delivery, no fees, fully secure.</div>
+                  </div>
+                </div>
+                {paymentMethod === 'interac' && (
+                  <div className="mt-4 ml-8 p-4 bg-black border border-white/10 space-y-2 text-sm">
+                    <div className="text-xs uppercase tracking-widest text-white/40 mb-2">Send Interac e-Transfer to:</div>
+                    <div className="text-white font-bold text-base">orders@mehdisports.com</div>
+                    <div className="text-xs text-white/60 mt-3">
+                      <span className="text-lime-400 font-bold">Amount:</span> ${total.toFixed(2)} CAD
+                    </div>
+                    <div className="text-xs text-white/60">
+                      <span className="text-lime-400 font-bold">Message:</span> Order {orderNumber}
+                    </div>
+                    <div className="text-xs text-white/60">
+                      <span className="text-lime-400 font-bold">Security Q:</span> Set to "mehdisports" (lowercase)
+                    </div>
+                    <div className="text-[11px] text-white/40 mt-3 pt-3 border-t border-white/10">
+                      Place your order below. You'll receive an email with these instructions. We'll confirm receipt within 1-2 hours and ship same day if before 6PM EST.
+                    </div>
+                  </div>
+                )}
+              </label>
+
+              {/* Crypto */}
+              <label className={`block cursor-pointer border-2 p-4 transition-colors ${paymentMethod === 'crypto' ? 'border-lime-400 bg-lime-400/5' : 'border-white/10 hover:border-white/30'}`}>
+                <input type="radio" name="payment" value="crypto" checked={paymentMethod === 'crypto'}
+                  onChange={() => setPaymentMethod('crypto')} className="sr-only" />
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${paymentMethod === 'crypto' ? 'border-lime-400' : 'border-white/30'}`}>
+                    {paymentMethod === 'crypto' && <div className="w-2.5 h-2.5 rounded-full bg-lime-400" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-white font-semibold flex items-center gap-2">
+                        Crypto
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white px-1.5 py-0.5">Global</span>
+                      </div>
+                      <div className="text-xs text-lime-400 font-bold">−5% Discount</div>
+                    </div>
+                    <div className="text-xs text-white/60">USDT, BTC, ETH. Fast, private, no chargebacks. Save 5% when you pay with crypto.</div>
+                  </div>
+                </div>
+                {paymentMethod === 'crypto' && (
+                  <div className="mt-4 ml-8 space-y-3">
+                    <div className="text-xs uppercase tracking-widest text-white/40 mb-1">Select cryptocurrency</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { code: 'USDT', name: 'USDT (TRC20)', desc: 'Tether on Tron · low fees' },
+                        { code: 'BTC', name: 'Bitcoin', desc: 'BTC mainnet' },
+                        { code: 'ETH', name: 'Ethereum', desc: 'ETH mainnet' },
+                      ].map(c => (
+                        <button key={c.code} type="button" onClick={() => setCryptoCurrency(c.code)}
+                          className={`p-3 border-2 text-left transition-colors ${cryptoCurrency === c.code ? 'border-lime-400 bg-lime-400/10' : 'border-white/10 hover:border-white/30'}`}>
+                          <div className="text-sm text-white font-bold">{c.name}</div>
+                          <div className="text-[10px] text-white/50 mt-0.5">{c.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="p-4 bg-black border border-white/10 space-y-2">
+                      <div className="text-xs text-white/60">
+                        <span className="text-lime-400 font-bold">Amount with 5% crypto discount:</span> ${(total * 0.95).toFixed(2)} USD
+                      </div>
+                      <div className="text-[11px] text-white/40 mt-2">
+                        After you place your order, you'll receive an email with the exact wallet address and amount in {cryptoCurrency}. Send within 30 minutes to lock in the rate. We'll ship within 1 hour of on-chain confirmation.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </label>
+
+              {/* Card — Coming soon */}
+              <div className="block border-2 border-white/10 p-4 opacity-50 cursor-not-allowed">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 w-5 h-5 rounded-full border-2 border-white/30 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-white font-semibold flex items-center gap-2">
+                        <CreditCard className="w-4 h-4" /> Credit / Debit Card
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white/60 px-1.5 py-0.5">Coming Soon</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-white/40">Visa, Mastercard, Amex coming soon. Pay with Interac or Crypto in the meantime.</div>
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs uppercase tracking-widest text-white/60 block mb-1.5">Expiry</label>
-                  <input placeholder="MM/YY" className="w-full bg-zinc-950 border border-white/10 text-white px-4 py-3 outline-none focus:border-lime-400" />
+
+              {/* Trust signals */}
+              <div className="pt-4 grid grid-cols-3 gap-3 text-center border-t border-white/5 mt-4">
+                <div className="text-xs text-white/60">
+                  <Shield className="w-4 h-4 mx-auto mb-1.5 text-lime-400" />
+                  100% Secure
                 </div>
-                <div>
-                  <label className="text-xs uppercase tracking-widest text-white/60 block mb-1.5">CVC</label>
-                  <input placeholder="123" className="w-full bg-zinc-950 border border-white/10 text-white px-4 py-3 outline-none focus:border-lime-400" />
+                <div className="text-xs text-white/60">
+                  <Truck className="w-4 h-4 mx-auto mb-1.5 text-lime-400" />
+                  Ship within 24h
+                </div>
+                <div className="text-xs text-white/60">
+                  <RotateCcw className="w-4 h-4 mx-auto mb-1.5 text-lime-400" />
+                  Money-back guarantee
                 </div>
               </div>
+
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setStep(2)} className="border border-white/10 text-white px-6 py-4 text-sm font-bold uppercase tracking-widest">
+                <button onClick={() => setStep(2)} disabled={submitting}
+                  className="border border-white/10 text-white px-6 py-4 text-sm font-bold uppercase tracking-widest disabled:opacity-50">
                   Back
                 </button>
-                <button onClick={() => setOrderComplete(true)}
-                  className="flex-1 bg-lime-400 hover:bg-white text-black py-4 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                  <Lock className="w-4 h-4" /> Pay ${total.toFixed(2)}
+                <button onClick={submitOrder} disabled={submitting || !paymentMethod}
+                  className="flex-1 bg-lime-400 hover:bg-white text-black py-4 font-bold uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {submitting ? (
+                    <>Processing...</>
+                  ) : (
+                    <><Lock className="w-4 h-4" /> Place order — ${paymentMethod === 'crypto' ? (total * 0.95).toFixed(2) : total.toFixed(2)}</>
+                  )}
                 </button>
               </div>
+
+              <p className="text-[11px] text-white/40 text-center mt-2">
+                By placing your order you agree to our <button onClick={() => navigate('terms')} className="underline hover:text-white">Terms</button> and <button onClick={() => navigate('privacy')} className="underline hover:text-white">Privacy Policy</button>.
+              </p>
             </div>
           )}
         </div>
@@ -2558,8 +2782,8 @@ const ContactPage = () => (
       <div className="grid md:grid-cols-2 gap-12">
         <div className="space-y-6">
           {[
-            { icon: Mail, label: 'Email', value: 'hello@mehdisports.com' },
-            { icon: Phone, label: 'Phone', value: '+1 (416) 555-0114' },
+            { icon: Mail, label: 'Email', value: 'orders@mehdisports.com' },
+            { icon: Phone, label: 'WhatsApp', value: '+1 (416) 555-0114' },
             { icon: MapPin, label: 'HQ', value: 'Toronto, ON · Canada' },
             { icon: Globe, label: 'Hours', value: 'Mon–Fri · 9am–6pm ET' },
           ].map(c => (
@@ -2676,7 +2900,7 @@ const PrivacyPage = () => <PolicyPage title="Privacy Policy" body={[
   'Your privacy matters. This policy describes how we collect, use, and protect your personal information.',
   { h: 'Information we collect', p: 'We collect information you provide during checkout (name, email, shipping address, payment info) and automatically through cookies (browsing behavior, IP address).' },
   { h: 'How we use it', p: 'To process orders, send order updates, improve our site, and (with your consent) send marketing emails. We never sell your data.' },
-  { h: 'Payment security', p: 'All payments are processed via Stripe. We never store your full card details on our servers.' },
+  { h: 'Payment security', p: 'We currently accept Interac e-Transfer and cryptocurrency (USDT, BTC, ETH). We never store payment credentials on our servers. Credit/debit card payments coming soon.' },
   { h: 'Your rights', p: 'You can request access, correction, or deletion of your data at any time by emailing privacy@mehdisports.com.' },
 ]} />;
 
@@ -2747,10 +2971,11 @@ const Footer = () => {
             </select>
             <div className="text-xs uppercase tracking-widest text-white font-bold mt-6 mb-3">We Accept</div>
             <div className="flex flex-wrap gap-1.5">
-              {['VISA', 'MC', 'AMEX', 'APPLE', 'PAY', 'KLARNA'].map(b => (
+              {['INTERAC', 'USDT', 'BTC', 'ETH'].map(b => (
                 <div key={b} className="px-2 py-1 bg-white/5 border border-white/10 text-[10px] font-bold text-white/70">{b}</div>
               ))}
             </div>
+            <div className="text-[10px] text-white/40 mt-2">Card payments coming soon</div>
           </div>
         </div>
 
@@ -2845,7 +3070,79 @@ const AppShell = () => {
       </main>
 
       {route.page !== 'checkout' && route.page !== 'account' && <Footer />}
+
+      {/* WhatsApp Floating Button */}
+      <WhatsAppButton />
     </div>
+  );
+};
+
+// ---------- WHATSAPP FLOATING BUTTON --------------------------------------
+// Replace YOUR_NUMBER with your real WhatsApp Business number (with country code, no + or spaces)
+// Example: 14165550114 for +1 (416) 555-0114
+const WhatsAppButton = () => {
+  const [open, setOpen] = useState(false);
+  const WHATSAPP_NUMBER = '14165550114'; // <-- CHANGE THIS to your real number
+  const defaultMessage = encodeURIComponent("Hi! I'm interested in ordering from MehdiSports. Can you help me?");
+  const link = `https://wa.me/${WHATSAPP_NUMBER}?text=${defaultMessage}`;
+
+  return (
+    <>
+      {/* Quick chat tooltip */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="fixed bottom-24 right-4 md:right-6 z-50 w-[280px] bg-zinc-950 border border-white/10 shadow-2xl rounded-lg p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-[#25D366] rounded-full flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="text-white text-sm font-bold">MehdiSports</div>
+                  <div className="text-[10px] text-lime-400 flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-lime-400 rounded-full" /> Online now
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setOpen(false)} className="text-white/40 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="bg-black/40 p-3 rounded-md mb-3">
+              <div className="text-xs text-white/80 leading-relaxed">
+                👋 Need help finding a jersey? Want to order via WhatsApp? Message us — we reply within minutes.
+              </div>
+            </div>
+            <a href={link} target="_blank" rel="noopener noreferrer"
+              className="block w-full bg-[#25D366] hover:bg-[#1FAD56] text-white text-center py-3 text-xs font-bold uppercase tracking-widest rounded-md transition-colors">
+              Start Chat
+            </a>
+            <div className="text-[10px] text-white/30 text-center mt-2">
+              Typically replies in under 5 minutes
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating button */}
+      <button onClick={() => setOpen(!open)}
+        aria-label="Chat on WhatsApp"
+        className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 w-14 h-14 bg-[#25D366] hover:bg-[#1FAD56] rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
+        <motion.div
+          animate={{ scale: [1, 1.15, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute inset-0 bg-[#25D366] rounded-full opacity-50"
+        />
+        {open ? <X className="w-6 h-6 text-white relative" /> : <MessageCircle className="w-6 h-6 text-white relative" />}
+        {!open && (
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-lime-400 rounded-full border-2 border-black" />
+        )}
+      </button>
+    </>
   );
 };
 
