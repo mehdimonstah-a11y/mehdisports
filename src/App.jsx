@@ -1104,92 +1104,57 @@ const Hero = () => {
         </svg>
       </div>
 
-      {/* Floating hero — 5 GOATs in fanned-out trading card layout */}
+      {/* Floating hero — Composite image of the 5 GOATs */}
       {/*
-        TO ADD YOUR PLAYER IMAGES:
-        1. Save your 5 player photos to /public folder of your project with these EXACT names:
-           - /public/player-ronaldo.png  (or .jpg — works either way)
-           - /public/player-messi.png
-           - /public/player-mbappe.png
-           - /public/player-neymar.png
-           - /public/player-yamal.png
-        2. Best results: portrait orientation (taller than wide), ~600×800px each
-        3. The images you uploaded in chat (the 5 player photos) are exactly the right vibe
+        ✅ Image lives at: /public/hero-legends.png
+        Transparent PNG of Messi, Ronaldo, Mbappé, Neymar, Yamal (left → right)
       */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[62%] md:w-[58%] lg:w-[55%] max-w-[780px] pointer-events-none">
+      <div className="absolute right-0 bottom-0 w-full md:w-[62%] lg:w-[58%] xl:w-[55%] max-w-[1100px] pointer-events-none z-[1] opacity-30 md:opacity-100">
         <motion.div
-          initial={{ opacity: 0, x: 50 }}
+          initial={{ opacity: 0, x: 60 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1, delay: 0.3 }}
+          transition={{ duration: 1.2, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="relative"
         >
-          {/* Glow halo behind */}
-          <div className="absolute inset-0 bg-lime-400/20 blur-[120px] rounded-full scale-90" />
+          {/* Multi-layer glow halo behind players */}
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-[10%] w-[80%] h-[80%] bg-lime-400/25 blur-[140px] rounded-full" />
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-[20%] w-[60%] h-[60%] bg-lime-400/15 blur-[100px] rounded-full" />
 
-          {/* Fan layout — 5 player cards arranged like a hand of cards */}
+          {/* Subtle stadium light beams */}
+          <div className="absolute inset-0 overflow-hidden opacity-30 pointer-events-none">
+            <div className="absolute top-0 left-[20%] w-[2px] h-full bg-gradient-to-b from-lime-400/60 via-lime-400/10 to-transparent rotate-[8deg]" />
+            <div className="absolute top-0 left-[50%] w-[2px] h-full bg-gradient-to-b from-white/40 via-white/5 to-transparent" />
+            <div className="absolute top-0 left-[75%] w-[2px] h-full bg-gradient-to-b from-lime-400/40 via-lime-400/5 to-transparent -rotate-[6deg]" />
+          </div>
+
+          {/* The legends image — sits at bottom, no rotation, just a gentle hover */}
           <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            className="relative aspect-[4/5] w-full"
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+            className="relative"
           >
-            {[
-              { src: '/player-ronaldo.png', name: 'Ronaldo', rotate: -18, x: '0%', y: '8%', z: 1, delay: 0 },
-              { src: '/player-messi.png', name: 'Messi', rotate: -8, x: '15%', y: '2%', z: 2, delay: 0.1 },
-              { src: '/player-mbappe.png', name: 'Mbappé', rotate: 0, x: '30%', y: '0%', z: 5, delay: 0.2 },
-              { src: '/player-neymar.png', name: 'Neymar', rotate: 8, x: '45%', y: '2%', z: 2, delay: 0.3 },
-              { src: '/player-yamal.png', name: 'Yamal', rotate: 18, x: '60%', y: '8%', z: 1, delay: 0.4 },
-            ].map((p, i) => (
-              <motion.div
-                key={p.name}
-                initial={{ opacity: 0, y: 40, rotate: 0 }}
-                animate={{ opacity: 1, y: 0, rotate: p.rotate }}
-                transition={{ duration: 0.7, delay: 0.5 + p.delay, ease: [0.22, 1, 0.36, 1] }}
-                style={{
-                  position: 'absolute',
-                  left: p.x,
-                  top: p.y,
-                  width: '42%',
-                  zIndex: p.z,
-                }}
-              >
-                <div className="relative aspect-[3/4] bg-zinc-900 border-2 border-white/10 overflow-hidden shadow-2xl">
-                  <img
-                    src={p.src}
-                    alt={p.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Fallback if image not added yet — show gradient with name
-                      e.target.style.display = 'none';
-                      e.target.nextElementSibling.style.display = 'flex';
-                    }}
-                  />
-                  {/* Fallback gradient panel until image is added */}
-                  <div className="absolute inset-0 hidden flex-col items-center justify-end bg-gradient-to-br from-zinc-800 to-zinc-950 p-3">
-                    <div className="text-lime-400 text-[10px] uppercase tracking-widest font-bold">Add</div>
-                    <div className="text-white text-base font-black uppercase">{p.name}</div>
-                  </div>
-                  {/* Subtle bottom gradient + name label on real image */}
-                  <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-2 inset-x-0 text-center">
-                    <div className="text-white text-[11px] md:text-sm font-black uppercase tracking-wider">{p.name}</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+            <img
+              src="/hero-legends.png"
+              alt="Messi · Ronaldo · Mbappé · Neymar · Yamal"
+              className="relative w-full drop-shadow-[0_30px_60px_rgba(0,0,0,0.5)]"
+            />
           </motion.div>
+
+          {/* Bottom fade — blends players into the page */}
+          <div className="absolute inset-x-0 bottom-0 h-[15%] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
         </motion.div>
       </div>
 
       <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pb-16 md:pb-24 w-full">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
-          className="max-w-2xl">
+          className="max-w-xl lg:max-w-2xl">
 
-          <h1 className="text-[3rem] sm:text-[4.5rem] md:text-[6rem] lg:text-[7.5rem] font-black leading-[0.85] tracking-tighter text-white uppercase">
+          <h1 className="text-[3rem] sm:text-[4.5rem] md:text-[5.5rem] lg:text-[6.5rem] xl:text-[7.5rem] font-black leading-[0.88] tracking-tighter text-white uppercase">
             Worn by<br />
             <span className="italic font-serif font-normal text-lime-400">legends</span>.<br />
-            Built for<br />you.
+            Built for you.
           </h1>
-          <p className="mt-6 text-white/60 text-base md:text-lg max-w-md leading-relaxed">
+          <p className="mt-6 text-white/60 text-sm md:text-base lg:text-lg max-w-md leading-relaxed">
             Premium quality player editions, fan kits and retro classics from every league that matters.
             Custom name & number on every jersey.
           </p>
