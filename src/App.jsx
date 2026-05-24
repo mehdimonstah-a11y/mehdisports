@@ -574,7 +574,60 @@ const buildProducts = () => {
   return items;
 };
 
-const PRODUCTS = buildProducts();
+// PRODUCTS is the starting fallback catalog (~440 procedural items)
+// At runtime, StoreProvider fetches /products.json and REPLACES the contents of this array
+// with the real catalog of 5,029 products mapped to Yupoo CDN images.
+let PRODUCTS = buildProducts();
+
+// R2 URL prefix — all image filenames in the catalog are stored as short keys (no prefix)
+// to keep the JSON small. We prepend this to get the full CDN URL.
+const R2_URL_PREFIX = 'https://pub-48307add76af4753858d4750dc1ecf55.r2.dev/';
+
+// Flag bits packed in the catalog (saves JSON size)
+const FLAG_BITS = {
+  isRetro: 1, isKids: 2, isLongSleeve: 4, isPlayerVersion: 8,
+  isSpecial: 16, isGoalkeeper: 32, isWomens: 64, isTraining: 128,
+  isShorts: 256, isTracksuit: 512, isNew: 1024, isBest: 2048, isLimited: 4096,
+};
+
+// Decompress a row from the catalog JSON into a full product object
+const decompressProduct = (c) => {
+  const fl = c.fl || 0;
+  return {
+    id: c.i,
+    name: c.n,
+    image: R2_URL_PREFIX + encodeURIComponent(c.img).replace(/%2F/g, '/'),
+    club: c.t,            // team name acts as club id
+    clubName: c.t,
+    league: c.l,
+    country: c.c,
+    color: c.cl,
+    season: c.s,
+    kit: c.v,
+    variant: c.v,
+    version: c.ty,
+    type: c.ty,
+    price: c.p,
+    salePrice: null,
+    stock: c.st,
+    rating: c.r,
+    reviews: c.rv,
+    isRetro: !!(fl & FLAG_BITS.isRetro),
+    isKids: !!(fl & FLAG_BITS.isKids),
+    isLongSleeve: !!(fl & FLAG_BITS.isLongSleeve),
+    isPlayerVersion: !!(fl & FLAG_BITS.isPlayerVersion),
+    isSpecial: !!(fl & FLAG_BITS.isSpecial),
+    isGoalkeeper: !!(fl & FLAG_BITS.isGoalkeeper),
+    isWomens: !!(fl & FLAG_BITS.isWomens),
+    isTraining: !!(fl & FLAG_BITS.isTraining),
+    isShorts: !!(fl & FLAG_BITS.isShorts),
+    isTracksuit: !!(fl & FLAG_BITS.isTracksuit),
+    isNew: !!(fl & FLAG_BITS.isNew),
+    isBest: !!(fl & FLAG_BITS.isBest),
+    isLimited: !!(fl & FLAG_BITS.isLimited),
+    tags: [c.v, c.ty, c.s, c.t].filter(Boolean),
+  };
+};
 
 // ---------- CART CONTEXT ----------------------------------------------------
 const StoreContext = createContext(null);
@@ -590,6 +643,29 @@ const StoreProvider = ({ children }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [currency, setCurrency] = useState({ code: 'USD', symbol: '$', rate: 1 });
   const [toast, setToast] = useState(null);
+  // Tracks whether the real catalog has been loaded — used to force re-render
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
+
+  // On startup, fetch /products.json and REPLACE the PRODUCTS array with real items
+  useEffect(() => {
+    fetch('/products.json')
+      .then(r => r.ok ? r.json() : Promise.reject('Failed to load catalog'))
+      .then(compressed => {
+        if (!Array.isArray(compressed) || compressed.length === 0) {
+          console.warn('Real catalog empty or invalid, keeping fallback');
+          return;
+        }
+        const real = compressed.map(decompressProduct);
+        // Mutate the PRODUCTS array in place so all existing references update
+        PRODUCTS.length = 0;
+        real.forEach(p => PRODUCTS.push(p));
+        setCatalogLoaded(true);
+        console.log(`[MehdiSports] Loaded ${real.length} products from real catalog`);
+      })
+      .catch(err => {
+        console.warn('[MehdiSports] Using fallback catalog:', err);
+      });
+  }, []);
 
   const addToCart = (product, opts) => {
     const key = `${product.id}-${opts.size}-${opts.playerName || ''}-${opts.playerNumber || ''}`;
@@ -641,6 +717,7 @@ const StoreProvider = ({ children }) => {
       searchOpen, setSearchOpen,
       currency, setCurrency,
       toast,
+      catalogLoaded,
     }}>
       {children}
     </StoreContext.Provider>
@@ -648,7 +725,27 @@ const StoreProvider = ({ children }) => {
 };
 
 // ---------- JERSEY SVG ------------------------------------------------------
-const JerseySVG = ({ club, playerName, playerNumber, view = 'front', className = '' }) => {
+const JerseySVG = ({ club, playerName, playerNumber, view = 'front', className = '', imageUrl = null }) => {
+  // If a real image URL is provided, render that instead of the SVG mockup
+  // This is the path for products mapped to real Yupoo CDN images
+  if (imageUrl) {
+    return (
+      <div className={`${className} relative overflow-hidden`}>
+        <img
+          src={imageUrl}
+          alt=""
+          loading="lazy"
+          className="w-full h-full object-contain"
+          onError={(e) => {
+            // If real image fails to load, swap to a transparent pixel and let parent show something
+            e.target.style.opacity = '0';
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Fallback: original SVG mockup for products without a real image
   const design = JERSEY_DESIGNS[club] || JERSEY_DESIGNS.rma;
   const { primary, secondary, pattern } = design;
   const isLight = ['#FFFFFF', '#FDE100', '#FFDF00', '#FFCC00', '#F7B5CD'].includes(primary);
@@ -989,7 +1086,7 @@ const SearchOverlay = () => {
                     onClick={() => { navigate('product', { productId: p.id }); setSearchOpen(false); setQ(''); }}
                     className="w-full flex items-center gap-4 p-3 hover:bg-white/5 rounded-lg text-left group">
                     <div className="w-14 h-14 bg-zinc-900 rounded-md overflow-hidden flex-shrink-0">
-                      <JerseySVG club={p.club} className="w-full h-full" />
+                      <JerseySVG club={p.club} imageUrl={p.image} className="w-full h-full" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-white font-medium truncate group-hover:text-lime-400">{p.name}</div>
@@ -1048,7 +1145,7 @@ const ProductCard = ({ product, layout = 'default' }) => {
             className="w-[85%] h-[85%] relative"
           >
             <div style={{ backfaceVisibility: 'hidden' }} className="absolute inset-0">
-              <JerseySVG club={product.club} view="front" className="w-full h-full drop-shadow-2xl" />
+              <JerseySVG club={product.club} imageUrl={product.image} view="front" className="w-full h-full drop-shadow-2xl" />
             </div>
             <div style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }} className="absolute inset-0">
               <JerseySVG club={product.club} view="back"
@@ -1435,7 +1532,7 @@ const RetroSection = () => {
               className="aspect-[3/4] bg-zinc-900 cursor-pointer hover:scale-105 transition-transform"
               onClick={() => navigate('product', { productId: p.id })}
             >
-              <JerseySVG club={p.club} className="w-full h-full" />
+              <JerseySVG club={p.club} imageUrl={p.image} className="w-full h-full" />
             </motion.div>
           ))}
         </div>
@@ -2274,7 +2371,7 @@ const CartDrawer = () => {
                     <div key={item.key} className="flex gap-3 pb-4 border-b border-white/5">
                       <button onClick={() => { setCartOpen(false); navigate('product', { productId: item.product.id }); }}
                         className="w-20 h-24 bg-black flex-shrink-0">
-                        <JerseySVG club={item.product.club} className="w-full h-full" />
+                        <JerseySVG club={item.product.club} imageUrl={item.product.image} className="w-full h-full" />
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="text-white text-sm font-semibold leading-tight">{item.product.name}</div>
@@ -2767,7 +2864,7 @@ const CheckoutPage = () => {
               {cart.map(item => (
                 <div key={item.key} className="flex gap-3">
                   <div className="w-14 h-16 bg-black flex-shrink-0 relative">
-                    <JerseySVG club={item.product.club} className="w-full h-full" />
+                    <JerseySVG club={item.product.club} imageUrl={item.product.image} className="w-full h-full" />
                     <span className="absolute -top-1 -right-1 bg-lime-400 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                       {item.qty}
                     </span>
