@@ -109,22 +109,81 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const SEASONS = ['25/26', '24/25', '23/24', 'Retro 90s', 'Retro 00s'];
 
 // Curated featured players for player jerseys (linked to current 25/26 clubs)
-// Featured players — each maps to their career history of clubs + national teams
-// Clicking a player filters the shop to show every jersey from teams they've played for
+// Featured players — each maps to PRECISE career history with seasons per club
+// When user clicks a player, the shop filters to ONLY jerseys from their actual clubs
+// during the exact seasons they were there. No anachronisms (e.g., no Mbappé 2003 Real Madrid).
+//
+// Format: career = [{ team, fromYear, toYear }]
+// Years are start of season (e.g., 2017 = 17/18 season)
 const PLAYERS = [
-  { id: 'mbappe', name: 'Mbappé', number: 10, club: 'Real Madrid', careerTeams: ['Real Madrid', 'Paris Saint-Germain', 'Monaco', 'France'] },
-  { id: 'messi', name: 'Messi', number: 10, club: 'Inter Miami', careerTeams: ['Inter Miami', 'Paris Saint-Germain', 'Barcelona', 'Argentina'] },
-  { id: 'ronaldo', name: 'Ronaldo', number: 7, club: 'Al-Nassr', careerTeams: ['Al-Nassr', 'Manchester United', 'Juventus', 'Real Madrid', 'Portugal'] },
-  { id: 'haaland', name: 'Haaland', number: 9, club: 'Manchester City', careerTeams: ['Manchester City', 'Borussia Dortmund', 'Norway'] },
-  { id: 'lamine', name: 'Lamine Yamal', number: 19, club: 'Barcelona', careerTeams: ['Barcelona', 'Spain'] },
-  { id: 'vini', name: 'Vinicius Jr', number: 7, club: 'Real Madrid', careerTeams: ['Real Madrid', 'Brazil'] },
-  { id: 'salah', name: 'Salah', number: 11, club: 'Liverpool', careerTeams: ['Liverpool', 'Roma', 'Chelsea', 'Egypt'] },
-  { id: 'bellingham', name: 'Bellingham', number: 5, club: 'Real Madrid', careerTeams: ['Real Madrid', 'Borussia Dortmund', 'England'] },
-  { id: 'kane', name: 'Kane', number: 9, club: 'Bayern Munich', careerTeams: ['Bayern Munich', 'Tottenham', 'England'] },
-  { id: 'neymar', name: 'Neymar', number: 10, club: 'Santos', careerTeams: ['Santos', 'Barcelona', 'Paris Saint-Germain', 'Al-Hilal', 'Brazil'] },
-  { id: 'bruno', name: 'Bruno Fernandes', number: 8, club: 'Manchester United', careerTeams: ['Manchester United', 'Sporting CP', 'Portugal'] },
-  { id: 'saka', name: 'Saka', number: 7, club: 'Arsenal', careerTeams: ['Arsenal', 'England'] },
+  {
+    id: 'mbappe', name: 'Mbappé', number: 10, club: 'Real Madrid',
+    career: [
+      { team: 'Monaco', fromYear: 2015, toYear: 2017 },         // 15/16, 16/17
+      { team: 'Paris Saint-Germain', fromYear: 2017, toYear: 2024 }, // 17/18 → 23/24
+      { team: 'Real Madrid', fromYear: 2024, toYear: 2099 },    // 24/25 onwards
+      { team: 'France', fromYear: 2017, toYear: 2099 },         // National team — any year
+    ],
+  },
+  {
+    id: 'messi', name: 'Messi', number: 10, club: 'Inter Miami',
+    career: [
+      { team: 'Barcelona', fromYear: 2004, toYear: 2021 },      // 04/05 → 20/21
+      { team: 'Paris Saint-Germain', fromYear: 2021, toYear: 2023 }, // 21/22, 22/23
+      { team: 'Inter Miami', fromYear: 2023, toYear: 2099 },    // 23/24 onwards
+      { team: 'Argentina', fromYear: 2005, toYear: 2099 },
+    ],
+  },
+  {
+    id: 'ronaldo', name: 'Ronaldo', number: 7, club: 'Al-Nassr',
+    career: [
+      { team: 'Manchester United', fromYear: 2003, toYear: 2009 },   // 03/04 → 08/09
+      { team: 'Real Madrid', fromYear: 2009, toYear: 2018 },          // 09/10 → 17/18
+      { team: 'Juventus', fromYear: 2018, toYear: 2021 },             // 18/19 → 20/21
+      { team: 'Manchester United', fromYear: 2021, toYear: 2022 },   // return 21/22
+      { team: 'Al-Nassr', fromYear: 2022, toYear: 2099 },             // 22/23 onwards
+      { team: 'Portugal', fromYear: 2003, toYear: 2099 },
+    ],
+  },
+  {
+    id: 'haaland', name: 'Haaland', number: 9, club: 'Manchester City',
+    career: [
+      { team: 'Borussia Dortmund', fromYear: 2019, toYear: 2022 },   // 19/20 → 21/22
+      { team: 'Manchester City', fromYear: 2022, toYear: 2099 },     // 22/23 onwards
+      { team: 'Norway', fromYear: 2019, toYear: 2099 },
+    ],
+  },
+  {
+    id: 'lamine', name: 'Lamine Yamal', number: 19, club: 'Barcelona',
+    career: [
+      { team: 'Barcelona', fromYear: 2023, toYear: 2099 },           // 23/24 debut onwards
+      { team: 'Spain', fromYear: 2023, toYear: 2099 },
+    ],
+  },
+  {
+    id: 'vini', name: 'Vinicius Jr', number: 7, club: 'Real Madrid',
+    career: [
+      { team: 'Real Madrid', fromYear: 2018, toYear: 2099 },         // 18/19 onwards
+      { team: 'Brazil', fromYear: 2019, toYear: 2099 },
+    ],
+  },
+  {
+    id: 'neymar', name: 'Neymar', number: 10, club: 'Santos',
+    career: [
+      { team: 'Santos', fromYear: 2009, toYear: 2013 },              // 09/10 → 12/13
+      { team: 'Barcelona', fromYear: 2013, toYear: 2017 },           // 13/14 → 16/17
+      { team: 'Paris Saint-Germain', fromYear: 2017, toYear: 2023 },// 17/18 → 22/23
+      { team: 'Al-Hilal', fromYear: 2023, toYear: 2025 },            // 23/24, 24/25
+      { team: 'Santos', fromYear: 2025, toYear: 2099 },              // return 25/26
+      { team: 'Brazil', fromYear: 2010, toYear: 2099 },
+    ],
+  },
 ];
+
+// Derive list of teams from career (used by shop to show banner text)
+PLAYERS.forEach(p => {
+  p.careerTeams = Array.from(new Set(p.career.map(c => c.team)));
+});
 
 // Color palettes per club for SVG jersey rendering
 const JERSEY_DESIGNS = {
@@ -645,7 +704,46 @@ const StoreProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
-  const [route, setRoute] = useState({ page: 'home' });
+  // Route state with URL sync (proper browser back/forward support)
+  // Routes serialize to URLs like:
+  //   /            (home)
+  //   /shop        (shop, no filter)
+  //   /shop?league=Premier+League&clubName=Liverpool   (filtered shop)
+  //   /product/p123 (product detail)
+  //   /clubs       (clubs page)
+  //   /wishlist, /account, /checkout, /about, /contact, /faq, etc.
+  const parseUrl = () => {
+    const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    if (path === '/' || path === '') return { page: 'home' };
+    if (path.startsWith('/product/')) return { page: 'product', productId: path.replace('/product/', '') };
+    if (path.startsWith('/shop')) {
+      const filter = {};
+      for (const [k, v] of params.entries()) {
+        if (k === 'careerTeams') filter[k] = v.split(',');
+        else filter[k] = v;
+      }
+      return { page: 'shop', filter };
+    }
+    if (path === '/clubs') return { page: 'clubs' };
+    if (path === '/wishlist') return { page: 'wishlist' };
+    if (path === '/account') return { page: 'account' };
+    if (path === '/checkout') return { page: 'checkout' };
+    if (path === '/about') return { page: 'about' };
+    if (path === '/contact') return { page: 'contact' };
+    if (path === '/faq') return { page: 'faq' };
+    if (path === '/order-tracking') return { page: 'order-tracking' };
+    if (path === '/shipping') return { page: 'shipping' };
+    if (path === '/returns') return { page: 'returns' };
+    if (path === '/terms') return { page: 'terms' };
+    if (path === '/privacy') return { page: 'privacy' };
+    return { page: 'home' };
+  };
+
+  const [route, setRoute] = useState(() => {
+    if (typeof window === 'undefined') return { page: 'home' };
+    return parseUrl();
+  });
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -705,11 +803,45 @@ const StoreProvider = ({ children }) => {
     });
   };
 
+  // Build a URL from a route object (mirror of parseUrl)
+  const routeToUrl = (page, params) => {
+    if (page === 'home') return '/';
+    if (page === 'product') return `/product/${params.productId || ''}`;
+    if (page === 'shop') {
+      const filter = params.filter || {};
+      const q = new URLSearchParams();
+      for (const [k, v] of Object.entries(filter)) {
+        if (v == null || v === '' || v === false) continue;
+        if (Array.isArray(v)) q.set(k, v.join(','));
+        else q.set(k, String(v));
+      }
+      const qs = q.toString();
+      return qs ? `/shop?${qs}` : '/shop';
+    }
+    return `/${page}`;
+  };
+
   const navigate = (page, params = {}) => {
+    const url = routeToUrl(page, params);
+    // Push only if URL changes (avoids duplicate history entries)
+    if (typeof window !== 'undefined' && (window.location.pathname + window.location.search) !== url) {
+      window.history.pushState({ page, ...params }, '', url);
+    }
     setRoute({ page, ...params });
     setMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+
+  // Browser back/forward button — sync route state with URL changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = () => {
+      setRoute(parseUrl());
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const subtotal = cart.reduce((s, i) => s + (i.product.salePrice || i.product.price) * i.qty, 0);
@@ -1279,24 +1411,35 @@ const Hero = () => {
 
 const TrendingClubs = () => {
   const { navigate } = useStore();
-  // Find the real home jersey for each trending club, with real photo from R2
+  // Find the specific 25/26 Home Jersey for each trending club
   const trending = useMemo(() => {
     const trendingClubNames = ['Real Madrid', 'Barcelona', 'Manchester City', 'Liverpool', 'Paris Saint-Germain', 'Bayern Munich', 'Manchester United', 'Inter Miami'];
     return trendingClubNames.map(name => {
-      // Find best matching home jersey for this club
+      // STRICT: must be Home jersey for THIS club, current season, no special editions
       const candidates = PRODUCTS.filter(p =>
         p.clubName === name &&
-        !p.isRetro &&
-        !p.isKids &&
-        (p.variant === 'Home')
+        p.variant === 'Home' &&
+        !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
+        !p.isTraining && !p.isGoalkeeper && !p.isSpecial && !p.isLongSleeve &&
+        // Must be 25/26 season (or 2025/26 long form)
+        (p.season === '25/26' || p.season === '2025/26' || p.season === '2025/2026')
       );
-      // Prefer current season
-      candidates.sort((a, b) => {
-        const aScore = (a.season || '').includes('25') || (a.season || '').includes('26') ? 0 : 1;
-        const bScore = (b.season || '').includes('25') || (b.season || '').includes('26') ? 0 : 1;
-        return aScore - bScore;
-      });
-      const product = candidates[0];
+      // If no 25/26, fall back to most recent current-season match
+      let product = candidates[0];
+      if (!product) {
+        const fallback = PRODUCTS.filter(p =>
+          p.clubName === name &&
+          p.variant === 'Home' &&
+          !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
+          !p.isTraining && !p.isGoalkeeper && !p.isSpecial && !p.isLongSleeve
+        );
+        fallback.sort((a, b) => {
+          const ay = parseInt((a.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
+          const by = parseInt((b.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
+          return by - ay;
+        });
+        product = fallback[0];
+      }
       return product ? { name, product, color: product.color, league: product.league } : null;
     }).filter(Boolean);
   }, []);
@@ -1508,7 +1651,7 @@ const FeaturedPlayers = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                onClick={() => navigate('shop', { filter: { playerCareer: player.id, careerTeams: player.careerTeams } })}
+                onClick={() => navigate('shop', { filter: { playerCareer: player.id, careerHistory: player.career, careerTeams: player.careerTeams } })}
                 className="group bg-black aspect-[3/4] relative overflow-hidden border border-white/5 hover:border-lime-400/50 transition-colors"
               >
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -1531,48 +1674,59 @@ const FeaturedPlayers = () => {
   );
 };
 
-// Real top-selling clubs worldwide 2025 — based on actual sales data
-// Source: Diario AS, Euromericas Sport Marketing, Statista
-const TOP_SELLING_CLUBS = [
-  'Real Madrid',         // 3.13M jerseys sold in 2025
-  'Barcelona',           // 2.94M
-  'Paris Saint-Germain', // 2.55M (Mbappé era, now post)
-  'Manchester United',   // Top PL seller despite poor form
-  'Inter Miami',         // Messi effect
-  'Bayern Munich',
-  'Liverpool',
-  'Arsenal',
-  'Manchester City',
-  'Argentina',           // National team — Messi
-  'Portugal',            // Ronaldo
-  'Brazil',
+// Specific best-selling jerseys 2025 — based on Statista, Diario AS, Euromericas Sport Marketing
+// Format: each entry describes what to match against. The matcher picks the closest product available.
+const BEST_SELLING_TARGETS = [
+  // The 25/26 Real Madrid Home (Mbappé kit) — Real Madrid 3.13M sold in 2025
+  { clubName: 'Real Madrid', variant: 'Home', season: '25/26', label: 'Most sold globally' },
+  // The 25/26 Barcelona Home (Yamal/Lewandowski kit) — Barcelona 2.94M
+  { clubName: 'Barcelona', variant: 'Home', season: '25/26', label: 'Yamal effect' },
+  // Argentina Home — World Cup winners, Messi 3 stars
+  { clubName: 'Argentina', variant: 'Home', season: '24/25', label: 'World Champions' },
+  // Inter Miami Home — Messi MLS jersey, fastest seller in MLS history
+  { clubName: 'Inter Miami', variant: 'Home', season: '25/26', label: 'Messi MLS' },
+  // PSG Home 25/26
+  { clubName: 'Paris Saint-Germain', variant: 'Home', season: '25/26', label: 'European champs' },
+  // Man Utd Home (despite poor form, top PL seller — Bruno effect)
+  { clubName: 'Manchester United', variant: 'Home', season: '25/26', label: 'Top PL seller' },
+  // Liverpool Home
+  { clubName: 'Liverpool', variant: 'Home', season: '25/26', label: "Salah & Van Dijk" },
+  // Portugal — Ronaldo
+  { clubName: 'Portugal', variant: 'Home', season: '24/25', label: 'Ronaldo Portugal' },
 ];
+
+const TOP_SELLING_CLUBS = BEST_SELLING_TARGETS.map(t => t.clubName); // backward compat
 
 const BestSellers = () => {
   const { navigate } = useStore();
-  // Find the best home jersey for each top-selling club, prioritizing current season
+  // Match each best-seller target to a specific product, with smart fallback
   const items = useMemo(() => {
     const picked = [];
-    const seenClubs = new Set();
-    for (const clubName of TOP_SELLING_CLUBS) {
-      // Find best matching product for this club
-      const candidates = PRODUCTS.filter(p =>
-        p.clubName === clubName &&
-        !p.isRetro &&
-        !p.isKids &&
-        !p.isShorts &&
-        !p.isTracksuit &&
-        (p.variant === 'Home' || !p.variant)
+    for (const target of BEST_SELLING_TARGETS) {
+      // Try EXACT match: club + variant + season + no retro/kids/special
+      let candidates = PRODUCTS.filter(p =>
+        p.clubName === target.clubName &&
+        p.variant === target.variant &&
+        !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
+        !p.isTraining && !p.isGoalkeeper && !p.isSpecial && !p.isLongSleeve &&
+        (p.season === target.season || p.season === '20' + target.season || p.season === '20' + target.season.replace('/', '/20'))
       );
-      // Prefer current season
-      candidates.sort((a, b) => {
-        const aScore = (a.season || '').includes('25') || (a.season || '').includes('26') ? 0 : 1;
-        const bScore = (b.season || '').includes('25') || (b.season || '').includes('26') ? 0 : 1;
-        return aScore - bScore;
-      });
-      if (candidates.length > 0 && !seenClubs.has(clubName)) {
+      // Relax: drop the season requirement, prefer most recent
+      if (candidates.length === 0) {
+        candidates = PRODUCTS.filter(p =>
+          p.clubName === target.clubName &&
+          p.variant === target.variant &&
+          !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
+          !p.isTraining && !p.isGoalkeeper && !p.isSpecial && !p.isLongSleeve
+        );
+        candidates.sort((a, b) => {
+          const ay = parseInt((a.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
+          const by = parseInt((b.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
+          return by - ay;
+        });
+      }
+      if (candidates.length > 0) {
         picked.push(candidates[0]);
-        seenClubs.add(clubName);
       }
       if (picked.length >= 8) break;
     }
@@ -1815,6 +1969,7 @@ const ShopPage = () => {
     isNew: initialFilter.isNew || false,
     isBest: initialFilter.isBest || false,
     careerTeams: initialFilter.careerTeams || null,
+    careerHistory: initialFilter.careerHistory || null,
     playerCareer: initialFilter.playerCareer || null,
   });
   const [sort, setSort] = useState('featured');
@@ -1829,6 +1984,24 @@ const ShopPage = () => {
     }
   }, [route]);
 
+  // Helper: extract starting year from a product's season string ("25/26" → 2025, "2025/26" → 2025, "1990" → 1990)
+  const getSeasonStartYear = (seasonStr) => {
+    if (!seasonStr) return null;
+    // Pattern: 2025/26 → 2025
+    let m = seasonStr.match(/^(\d{4})\//);
+    if (m) return parseInt(m[1]);
+    // Pattern: 25/26 → 2025
+    m = seasonStr.match(/^(\d{2})\//);
+    if (m) {
+      const yy = parseInt(m[1]);
+      return yy < 30 ? 2000 + yy : 1900 + yy;
+    }
+    // Single 4-digit year
+    m = seasonStr.match(/^(\d{4})$/);
+    if (m) return parseInt(m[1]);
+    return null;
+  };
+
   const filtered = useMemo(() => {
     let result = PRODUCTS.filter(p => {
       if (filters.league && p.league !== filters.league) return false;
@@ -1838,8 +2011,18 @@ const ShopPage = () => {
       if (filters.onSale && !p.salePrice) return false;
       if (filters.isNew && !p.isNew) return false;
       if (filters.isBest && !p.isBest) return false;
-      // Career-team filter (when user clicks a player)
-      if (filters.careerTeams && Array.isArray(filters.careerTeams)) {
+      // Precise player career filter — team must match AND season must fall within their time at that team
+      if (filters.careerHistory && Array.isArray(filters.careerHistory)) {
+        const seasonYear = getSeasonStartYear(p.season);
+        const matches = filters.careerHistory.some(stint => {
+          if (stint.team !== p.clubName) return false;
+          // For national teams or jerseys with unknown season, allow any
+          if (seasonYear == null) return true;
+          return seasonYear >= stint.fromYear && seasonYear < stint.toYear;
+        });
+        if (!matches) return false;
+      } else if (filters.careerTeams && Array.isArray(filters.careerTeams)) {
+        // Fallback if only careerTeams provided (no season precision)
         if (!filters.careerTeams.includes(p.clubName)) return false;
       }
       const price = p.salePrice || p.price;
