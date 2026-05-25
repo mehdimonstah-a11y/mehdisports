@@ -730,18 +730,17 @@ const JerseySVG = ({ club, playerName, playerNumber, view = 'front', className =
   // This is the path for products mapped to real Yupoo CDN images
   if (imageUrl) {
     return (
-      <div className={`${className} relative overflow-hidden`}>
-        <img
-          src={imageUrl}
-          alt=""
-          loading="lazy"
-          className="w-full h-full object-contain"
-          onError={(e) => {
-            // If real image fails to load, swap to a transparent pixel and let parent show something
-            e.target.style.opacity = '0';
-          }}
-        />
-      </div>
+      <img
+        src={imageUrl}
+        alt=""
+        loading="lazy"
+        className={`${className} object-contain`}
+        style={{ width: '100%', height: '100%' }}
+        onError={(e) => {
+          // If real image fails to load, hide it gracefully
+          e.target.style.opacity = '0.1';
+        }}
+      />
     );
   }
 
