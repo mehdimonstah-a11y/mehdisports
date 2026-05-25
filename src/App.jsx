@@ -1492,18 +1492,55 @@ const TrendingClubs = () => {
   );
 };
 
+// New Arrivals — 26/27 home jerseys of the biggest clubs (next season drops)
+const NEW_ARRIVAL_CLUBS = [
+  'Real Madrid', 'Barcelona', 'Manchester United', 'Manchester City',
+  'Liverpool', 'Arsenal', 'Chelsea', 'Bayern Munich', 'Paris Saint-Germain',
+  'Juventus', 'AC Milan', 'Inter Milan', 'Atletico Madrid', 'Tottenham',
+];
+
 const NewArrivals = () => {
-  const items = PRODUCTS.filter(p => p.isNew).slice(0, 8);
-  const { navigate } = useStore();
+  const { navigate, catalogLoaded } = useStore();
+  // Pick the 26/27 home jersey for each major club (fall back to 25/26 if no 26/27)
+  const items = useMemo(() => {
+    const picked = [];
+    for (const clubName of NEW_ARRIVAL_CLUBS) {
+      // Try 26/27 home first
+      let match = PRODUCTS.find(p =>
+        p.clubName === clubName &&
+        p.variant === 'Home' &&
+        !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
+        !p.isTraining && !p.isGoalkeeper && !p.isSpecial && !p.isLongSleeve &&
+        (p.season === '26/27' || p.season === '2026/27' || p.season === '2026/2027')
+      );
+      // Fall back to 25/26
+      if (!match) {
+        match = PRODUCTS.find(p =>
+          p.clubName === clubName &&
+          p.variant === 'Home' &&
+          !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
+          !p.isTraining && !p.isGoalkeeper && !p.isSpecial && !p.isLongSleeve &&
+          (p.season === '25/26' || p.season === '2025/26')
+        );
+      }
+      if (match) picked.push(match);
+      if (picked.length >= 8) break;
+    }
+    return picked;
+  }, [catalogLoaded]);
+
+  if (items.length === 0) return null;
+
   return (
     <section className="bg-black py-16 md:py-24">
       <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="flex items-end justify-between mb-10">
           <div>
             <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2 flex items-center gap-2">
-              <Sparkles className="w-3 h-3" /> Just dropped
+              <Sparkles className="w-3 h-3" /> Just dropped — 26/27 season
             </div>
             <h2 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tight">New Arrivals</h2>
+            <p className="text-white/40 text-xs mt-2">Next-season home kits from the world's biggest clubs</p>
           </div>
           <button onClick={() => navigate('shop', { filter: { isNew: true } })}
             className="hidden md:flex items-center gap-2 text-white/70 hover:text-lime-400 text-sm uppercase tracking-widest">
@@ -1911,6 +1948,7 @@ const HomePage = () => (
     <TrendingClubs />
     <NewArrivals />
     <PromoBanner />
+    <WorldCup2026 />
     <ShopByLeague />
     <FeaturedPlayers />
     <BestSellers />
@@ -1920,6 +1958,110 @@ const HomePage = () => (
     <Newsletter />
   </>
 );
+
+// ---------- WORLD CUP 2026 SECTION ----------------------------------------
+const WORLD_CUP_TEAMS = [
+  { name: 'Argentina', emoji: '🇦🇷' }, { name: 'Brazil', emoji: '🇧🇷' },
+  { name: 'France', emoji: '🇫🇷' }, { name: 'England', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { name: 'Portugal', emoji: '🇵🇹' }, { name: 'Spain', emoji: '🇪🇸' },
+  { name: 'Germany', emoji: '🇩🇪' }, { name: 'Italy', emoji: '🇮🇹' },
+  { name: 'Netherlands', emoji: '🇳🇱' }, { name: 'Mexico', emoji: '🇲🇽' },
+  { name: 'USA', emoji: '🇺🇸' }, { name: 'Canada', emoji: '🇨🇦' },
+  { name: 'Japan', emoji: '🇯🇵' }, { name: 'Morocco', emoji: '🇲🇦' },
+  { name: 'Croatia', emoji: '🇭🇷' }, { name: 'Belgium', emoji: '🇧🇪' },
+];
+
+const WorldCup2026 = () => {
+  const { navigate, catalogLoaded } = useStore();
+  // For each nation, find a 25/26 or recent home jersey
+  const items = useMemo(() => {
+    const picked = [];
+    for (const team of WORLD_CUP_TEAMS) {
+      const candidates = PRODUCTS.filter(p =>
+        p.clubName === team.name &&
+        p.variant === 'Home' &&
+        !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
+        !p.isTraining && !p.isGoalkeeper && !p.isLongSleeve
+      );
+      // Sort by recency
+      candidates.sort((a, b) => {
+        const ay = parseInt((a.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
+        const by = parseInt((b.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
+        return by - ay;
+      });
+      if (candidates.length > 0) {
+        picked.push({ ...team, product: candidates[0] });
+      }
+      if (picked.length >= 12) break;
+    }
+    return picked;
+  }, [catalogLoaded]);
+
+  if (items.length === 0) return null;
+
+  return (
+    <section className="relative bg-gradient-to-br from-zinc-950 via-black to-zinc-950 py-20 md:py-28 overflow-hidden border-y border-white/5">
+      {/* Massive WC background type */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03]">
+        <div className="text-[14rem] md:text-[22rem] font-black tracking-tighter leading-none">2026</div>
+      </div>
+
+      <div className="relative max-w-[1600px] mx-auto px-4 md:px-8">
+        <div className="text-center mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-2 bg-lime-400/10 border border-lime-400/30 px-3 py-1.5 mb-4">
+            <span className="w-1.5 h-1.5 bg-lime-400 rounded-full animate-pulse" />
+            <span className="text-lime-400 text-[10px] md:text-xs uppercase tracking-[0.3em] font-bold">FIFA World Cup · Coming June 2026</span>
+          </div>
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase text-white tracking-tighter leading-none">
+            Road To <span className="text-lime-400 italic font-serif font-normal">26.</span>
+          </h2>
+          <p className="text-white/60 text-sm md:text-base mt-4 max-w-xl mx-auto">
+            Wear the colors of your nation. Every World Cup contender's home kit, ready to ship.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+          {items.map((team, i) => (
+            <motion.button
+              key={team.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: Math.min(i * 0.03, 0.3) }}
+              onClick={() => navigate('product', { productId: team.product.id })}
+              className="group relative aspect-[4/5] overflow-hidden bg-zinc-950 hover:bg-zinc-900 border border-white/5 hover:border-lime-400/40 transition-colors"
+            >
+              <div className="absolute inset-0 flex items-center justify-center p-4">
+                <img
+                  src={team.product.image}
+                  alt={team.name}
+                  loading="lazy"
+                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+              <div className="absolute bottom-0 inset-x-0 p-4 md:p-5">
+                <div className="text-2xl mb-1">{team.emoji}</div>
+                <div className="text-white font-black uppercase tracking-tight text-base md:text-lg leading-tight">{team.name}</div>
+                <div className="mt-1.5 flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-widest text-white/40">{team.product.season || '25/26'}</span>
+                  <span className="text-lime-400 text-xs font-bold">${(team.product.salePrice || team.product.price).toFixed(2)}</span>
+                </div>
+              </div>
+            </motion.button>
+          ))}
+        </div>
+
+        <div className="text-center mt-10 md:mt-14">
+          <button onClick={() => navigate('shop', { filter: { league: 'International' } })}
+            className="inline-flex items-center gap-2 bg-lime-400 hover:bg-white text-black px-8 py-4 text-sm font-bold uppercase tracking-widest transition-colors">
+            View All National Teams <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
 
 // ---------- TRUST BAR — Sits above the fold for instant credibility -----------
 const TrustBar = () => (
@@ -1956,7 +2098,7 @@ const TrustBar = () => (
 
 // ---------- SHOP PAGE -------------------------------------------------------
 const ShopPage = () => {
-  const { route } = useStore();
+  const { route, catalogLoaded } = useStore();
   const initialFilter = route.filter || {};
   const [filters, setFilters] = useState({
     league: initialFilter.league || '',
@@ -2004,31 +2146,74 @@ const ShopPage = () => {
 
   const filtered = useMemo(() => {
     let result = PRODUCTS.filter(p => {
+      // League filter — direct match
       if (filters.league && p.league !== filters.league) return false;
-      if (filters.type && p.type !== filters.type) return false;
-      if (filters.version && p.version !== filters.version && p.type !== filters.type) return false;
+
+      // Jersey TYPE filter (Retro / Training Kit / Tracksuit / Shorts etc.)
+      // Maps user-facing filter values to product flags/types
+      if (filters.type) {
+        if (filters.type === 'Retro' && !p.isRetro) return false;
+        if (filters.type === 'Training Kit' && !p.isTraining) return false;
+        if (filters.type === 'Tracksuit' && !p.isTracksuit) return false;
+        if (filters.type === 'Shorts' && !p.isShorts) return false;
+        if (filters.type === 'Goalkeeper' && !p.isGoalkeeper) return false;
+        if (filters.type === 'Long Sleeve' && !p.isLongSleeve) return false;
+        // For "Jersey" type — exclude special categories
+        if (filters.type === 'Jersey' && (p.isRetro || p.isTraining || p.isTracksuit || p.isShorts)) return false;
+      }
+
+      // VERSION filter (Player Version / Fan Version / Kids) — checks product.variants
+      if (filters.version) {
+        if (!p.variants || !p.variants.includes(filters.version)) return false;
+      }
+
+      // CLUB filter
       if (filters.clubName && p.clubName !== filters.clubName) return false;
+
+      // BOOLEAN filters
       if (filters.onSale && !p.salePrice) return false;
       if (filters.isNew && !p.isNew) return false;
       if (filters.isBest && !p.isBest) return false;
-      // Precise player career filter — team must match AND season must fall within their time at that team
+
+      // Player CAREER filter (when user clicks a player) — strict team + season window
       if (filters.careerHistory && Array.isArray(filters.careerHistory)) {
         const seasonYear = getSeasonStartYear(p.season);
         const matches = filters.careerHistory.some(stint => {
           if (stint.team !== p.clubName) return false;
-          // For national teams or jerseys with unknown season, allow any
           if (seasonYear == null) return true;
           return seasonYear >= stint.fromYear && seasonYear < stint.toYear;
         });
         if (!matches) return false;
       } else if (filters.careerTeams && Array.isArray(filters.careerTeams)) {
-        // Fallback if only careerTeams provided (no season precision)
         if (!filters.careerTeams.includes(p.clubName)) return false;
       }
+
+      // PRICE filter
       const price = p.salePrice || p.price;
-      if (price > filters.priceMax) return false;
+      if (filters.priceMax != null && price > filters.priceMax) return false;
+      if (filters.priceMin != null && price < filters.priceMin) return false;
+
       return true;
     });
+
+    // Sort match kits FIRST for a club page (Home > Away > Third > Goalkeeper > Training > Pre-Match)
+    if (filters.clubName) {
+      const variantOrder = { 'Home': 0, 'Away': 1, 'Third': 2, 'Fourth': 3, 'Goalkeeper': 4 };
+      result.sort((a, b) => {
+        // Match kits before training/special
+        const aMatch = (!a.isTraining && !a.isShorts && !a.isTracksuit) ? 0 : 1;
+        const bMatch = (!b.isTraining && !b.isShorts && !b.isTracksuit) ? 0 : 1;
+        if (aMatch !== bMatch) return aMatch - bMatch;
+        // Then by variant order
+        const av = variantOrder[a.variant] ?? 5;
+        const bv = variantOrder[b.variant] ?? 5;
+        if (av !== bv) return av - bv;
+        // Then by recency (most recent season first)
+        const ay = parseInt((a.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
+        const by = parseInt((b.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
+        return by - ay;
+      });
+    }
 
     switch (sort) {
       case 'price-low': result.sort((a, b) => (a.salePrice || a.price) - (b.salePrice || b.price)); break;
@@ -2037,7 +2222,7 @@ const ShopPage = () => {
       case 'rating': result.sort((a, b) => b.rating - a.rating); break;
     }
     return result;
-  }, [filters, sort]);
+  }, [filters, sort, catalogLoaded]);
 
   const FilterPanel = () => (
     <div className="space-y-6">
@@ -2054,12 +2239,38 @@ const ShopPage = () => {
       </div>
 
       <div className="border-t border-white/5 pt-6">
-        <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">Jersey Type</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">Edition</div>
         <div className="space-y-2">
-          {['', 'Player Version', 'Fan Version', 'Retro', 'Training Kit'].map(t => (
-            <button key={t || 'all'} onClick={() => setFilters(f => ({ ...f, type: t, version: '' }))}
-              className={`block w-full text-left text-sm py-1 ${filters.type === t ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
-              {t || 'All Types'}
+          {[
+            { val: '', label: 'All Editions' },
+            { val: 'Player Version', label: 'Player Version' },
+            { val: 'Fan Version', label: 'Fan Version' },
+            { val: 'Kids', label: 'Kids' },
+          ].map(opt => (
+            <button key={opt.val || 'all'} onClick={() => setFilters(f => ({ ...f, version: opt.val }))}
+              className={`block w-full text-left text-sm py-1 ${filters.version === opt.val ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-white/5 pt-6">
+        <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">Type</div>
+        <div className="space-y-2">
+          {[
+            { val: '', label: 'All Types' },
+            { val: 'Jersey', label: 'Match Jerseys' },
+            { val: 'Retro', label: 'Retro' },
+            { val: 'Training Kit', label: 'Training Kit' },
+            { val: 'Tracksuit', label: 'Tracksuit' },
+            { val: 'Shorts', label: 'Shorts' },
+            { val: 'Goalkeeper', label: 'Goalkeeper' },
+            { val: 'Long Sleeve', label: 'Long Sleeve' },
+          ].map(opt => (
+            <button key={opt.val || 'all'} onClick={() => setFilters(f => ({ ...f, type: opt.val }))}
+              className={`block w-full text-left text-sm py-1 ${filters.type === opt.val ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
+              {opt.label}
             </button>
           ))}
         </div>
@@ -2068,7 +2279,7 @@ const ShopPage = () => {
       <div className="border-t border-white/5 pt-6">
         <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">Club</div>
         <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-          {['', ...CLUBS.map(c => c.name)].map(c => (
+          {['', ...Array.from(new Set(PRODUCTS.map(p => p.clubName))).filter(Boolean).sort()].map(c => (
             <button key={c || 'all'} onClick={() => setFilters(f => ({ ...f, clubName: c }))}
               className={`block w-full text-left text-sm py-1 ${filters.clubName === c ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
               {c || 'All Clubs'}
@@ -2082,7 +2293,7 @@ const ShopPage = () => {
           <span>Max Price</span>
           <span className="text-lime-400">${filters.priceMax}</span>
         </div>
-        <input type="range" min="50" max="200" value={filters.priceMax}
+        <input type="range" min="25" max="100" value={filters.priceMax}
           onChange={e => setFilters(f => ({ ...f, priceMax: +e.target.value }))}
           className="w-full accent-lime-400" />
       </div>
@@ -2324,8 +2535,8 @@ const ProductPage = () => {
     : selectedVariant === 'Kids' ? -5
     : 0;
   const price = Math.max(29.99, basePrice + variantAdjustment);
-  const customizationFee = (playerName || playerNumber) ? 12 : 0;
-  const badgeFee = addBadge ? 8 : 0;
+  const customizationFee = (playerName || playerNumber) ? 10 : 0;
+  const badgeFee = addBadge ? 7 : 0;
   const total = (price + customizationFee + badgeFee) * qty;
 
   // Related products — same team or same league
@@ -2514,7 +2725,7 @@ const ProductPage = () => {
             <div className="border border-white/10 p-5">
               <div className="flex items-center justify-between mb-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-white">Custom Print</div>
-                <span className="text-xs text-lime-400 font-bold">+$12</span>
+                <span className="text-xs text-lime-400 font-bold">+$10</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <input value={playerName} onChange={e => setPlayerName(e.target.value)}
@@ -2537,7 +2748,7 @@ const ProductPage = () => {
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-white text-sm font-semibold">Add competition badge</span>
-                  <span className="text-lime-400 text-xs font-bold">+$8</span>
+                  <span className="text-lime-400 text-xs font-bold">+$7</span>
                 </div>
                 <div className="text-[11px] text-white/40 mt-1">Champions League, Premier League, La Liga patches available.</div>
               </div>
@@ -2803,7 +3014,7 @@ const CheckoutPage = () => {
   const [cryptoCurrency, setCryptoCurrency] = useState('USDT'); // USDT | BTC | ETH
   const [submitting, setSubmitting] = useState(false);
 
-  const shippingCost = subtotal >= 99 ? 0 : (shipping === 'express' ? 18 : 9);
+  const shippingCost = subtotal >= 99 ? 0 : 9;
   const tax = (subtotal - discount.applied) * 0.13;
   const total = subtotal + shippingCost + tax - discount.applied;
 
@@ -3051,8 +3262,7 @@ const CheckoutPage = () => {
           {step === 2 && (
             <div className="space-y-3">
               {[
-                { id: 'standard', name: 'Standard Shipping', time: '5-7 business days', price: subtotal >= 99 ? 0 : 9 },
-                { id: 'express', name: 'Express Shipping', time: '2 business days', price: subtotal >= 99 ? 0 : 18 },
+                { id: 'standard', name: 'Standard Shipping', time: '7-12 business days', price: subtotal >= 99 ? 0 : 9 },
               ].map(opt => (
                 <label key={opt.id}
                   className={`flex items-center justify-between p-4 border-2 cursor-pointer ${shipping === opt.id ? 'border-lime-400 bg-lime-400/5' : 'border-white/10'}`}>
@@ -3685,11 +3895,10 @@ const ContactPage = () => (
 
 const FAQPage = () => {
   const faqs = [
-    { q: 'How long does shipping take?', a: 'Standard shipping is 5-7 business days. Express is 2 business days. Custom-printed jerseys add 1-2 days for production.' },
-    { q: 'Are these official jerseys?', a: 'Yes. We work with the same factories that supply official leagues. Every jersey is quality-verified and ships with an authenticity hologram.' },
-    { q: 'What\'s the difference between Player and Fan versions?', a: 'Player Version is the exact shirt worn on the pitch — pro-fit, Dri-FIT ADV fabric, laser-cut ventilation. Fan Version is more relaxed in fit with standard Dri-FIT fabric, designed for everyday wear.' },
+    { q: 'How long does shipping take?', a: 'Standard shipping is 7-12 business days worldwide. Custom-printed jerseys add 1-2 days for production.' },
+    { q: 'What\'s the difference between Player and Fan versions?', a: 'Player Version is the on-pitch cut — pro-fit, premium fabric, laser-cut ventilation. Fan Version is more relaxed in fit with standard fabric, designed for everyday wear.' },
     { q: 'Can I return a customized jersey?', a: 'Custom-printed jerseys (with name/number) are final sale. Non-customized jerseys can be returned within 30 days, unworn with tags.' },
-    { q: 'Do you ship internationally?', a: 'Yes, we ship to 120+ countries. International shipping is calculated at checkout. Free shipping on international orders over $180.' },
+    { q: 'Do you ship internationally?', a: 'Yes, we ship to 120+ countries. International shipping is calculated at checkout. Free shipping on international orders over $100.' },
     { q: 'What sizes are available?', a: 'XS through XXL for adults. Most clubs also have Kids sizes (YXS-YXL). Player Version runs slim — we recommend sizing up for a relaxed fit.' },
     { q: 'How do I track my order?', a: 'You\'ll get a tracking email when your order ships. You can also use our Track Order page with your order number and email.' },
     { q: 'Do you offer wholesale or team orders?', a: 'Yes! Email teams@mehdisports.com for bulk pricing on 12+ jerseys.' },
@@ -3733,8 +3942,8 @@ const PolicyPage = ({ title, body }) => (
 
 const ShippingPolicy = () => <PolicyPage title="Shipping Policy" body={[
   { h: 'Processing time', p: 'Orders ship within 1-2 business days. Custom-printed jerseys (name/number) require an additional 1-2 days for production.' },
-  { h: 'Domestic shipping (US/Canada)', p: 'Standard: 5-7 business days · $9 (free over $99). Express: 2 business days · $18.' },
-  { h: 'International shipping', p: 'We ship to 120+ countries. Rates calculated at checkout. Free standard shipping on international orders over $180.' },
+  { h: 'Domestic shipping (US/Canada)', p: 'Standard: 7-12 business days · $9 (free over $99).' },
+  { h: 'International shipping', p: 'We ship to 120+ countries. Rates calculated at checkout. Free standard shipping on international orders over $100.' },
   { h: 'Tracking', p: 'Every order ships with full tracking. You\'ll receive a tracking number via email as soon as your kit leaves our warehouse.' },
   { h: 'Customs & duties', p: 'International orders may be subject to import duties. These are the responsibility of the recipient.' },
 ]} />;
