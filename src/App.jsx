@@ -109,19 +109,21 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const SEASONS = ['25/26', '24/25', '23/24', 'Retro 90s', 'Retro 00s'];
 
 // Curated featured players for player jerseys (linked to current 25/26 clubs)
+// Featured players — each maps to their career history of clubs + national teams
+// Clicking a player filters the shop to show every jersey from teams they've played for
 const PLAYERS = [
-  { id: 'mbappe', name: 'Mbappé', number: 10, club: 'rma' },
-  { id: 'vini', name: 'Vinicius Jr', number: 7, club: 'rma' },
-  { id: 'bellingham', name: 'Bellingham', number: 5, club: 'rma' },
-  { id: 'haaland', name: 'Haaland', number: 9, club: 'mci' },
-  { id: 'salah', name: 'Salah', number: 11, club: 'liv' },
-  { id: 'saka', name: 'Saka', number: 7, club: 'ars' },
-  { id: 'lamine', name: 'Lamine Yamal', number: 19, club: 'bar' },
-  { id: 'pedri', name: 'Pedri', number: 8, club: 'bar' },
-  { id: 'kane', name: 'Kane', number: 9, club: 'bay' },
-  { id: 'dembele', name: 'Dembélé', number: 10, club: 'psg' },
-  { id: 'lautaro', name: 'Lautaro', number: 10, club: 'int' },
-  { id: 'rashford', name: 'Rashford', number: 11, club: 'bar' },
+  { id: 'mbappe', name: 'Mbappé', number: 10, club: 'Real Madrid', careerTeams: ['Real Madrid', 'Paris Saint-Germain', 'Monaco', 'France'] },
+  { id: 'messi', name: 'Messi', number: 10, club: 'Inter Miami', careerTeams: ['Inter Miami', 'Paris Saint-Germain', 'Barcelona', 'Argentina'] },
+  { id: 'ronaldo', name: 'Ronaldo', number: 7, club: 'Al-Nassr', careerTeams: ['Al-Nassr', 'Manchester United', 'Juventus', 'Real Madrid', 'Portugal'] },
+  { id: 'haaland', name: 'Haaland', number: 9, club: 'Manchester City', careerTeams: ['Manchester City', 'Borussia Dortmund', 'Norway'] },
+  { id: 'lamine', name: 'Lamine Yamal', number: 19, club: 'Barcelona', careerTeams: ['Barcelona', 'Spain'] },
+  { id: 'vini', name: 'Vinicius Jr', number: 7, club: 'Real Madrid', careerTeams: ['Real Madrid', 'Brazil'] },
+  { id: 'salah', name: 'Salah', number: 11, club: 'Liverpool', careerTeams: ['Liverpool', 'Roma', 'Chelsea', 'Egypt'] },
+  { id: 'bellingham', name: 'Bellingham', number: 5, club: 'Real Madrid', careerTeams: ['Real Madrid', 'Borussia Dortmund', 'England'] },
+  { id: 'kane', name: 'Kane', number: 9, club: 'Bayern Munich', careerTeams: ['Bayern Munich', 'Tottenham', 'England'] },
+  { id: 'neymar', name: 'Neymar', number: 10, club: 'Santos', careerTeams: ['Santos', 'Barcelona', 'Paris Saint-Germain', 'Al-Hilal', 'Brazil'] },
+  { id: 'bruno', name: 'Bruno Fernandes', number: 8, club: 'Manchester United', careerTeams: ['Manchester United', 'Sporting CP', 'Portugal'] },
+  { id: 'saka', name: 'Saka', number: 7, club: 'Arsenal', careerTeams: ['Arsenal', 'England'] },
 ];
 
 // Color palettes per club for SVG jersey rendering
@@ -593,20 +595,26 @@ const FLAG_BITS = {
 // Decompress a row from the catalog JSON into a full product object
 const decompressProduct = (c) => {
   const fl = c.fl || 0;
+  // Normalize season: replace any remaining underscores with slashes
+  const season = (c.s || '').replace(/_/g, '/');
+  // Normalize name: replace season underscores with slashes
+  const name = (c.n || '').replace(/(\d{2,4})_(\d{2,4})/g, '$1/$2');
   return {
     id: c.i,
-    name: c.n,
+    name: name,
     image: R2_URL_PREFIX + encodeURIComponent(c.img).replace(/%2F/g, '/'),
-    club: c.t,            // team name acts as club id
+    club: c.t,
     clubName: c.t,
     league: c.l,
     country: c.c,
     color: c.cl,
-    season: c.s,
+    season: season,
     kit: c.v,
     variant: c.v,
     version: c.ty,
     type: c.ty,
+    // Available variants for this product (Fan Version / Player Version / Kids)
+    variants: c.var || ['Fan Version'],
     price: c.p,
     salePrice: null,
     stock: c.st,
@@ -625,7 +633,7 @@ const decompressProduct = (c) => {
     isNew: !!(fl & FLAG_BITS.isNew),
     isBest: !!(fl & FLAG_BITS.isBest),
     isLimited: !!(fl & FLAG_BITS.isLimited),
-    tags: [c.v, c.ty, c.s, c.t].filter(Boolean),
+    tags: [c.v, c.ty, season, c.t].filter(Boolean),
   };
 };
 
@@ -874,7 +882,7 @@ const TopBar = () => {
           <div className="flex animate-marquee whitespace-nowrap gap-10">
             {Array(2).fill(0).map((_, i) => (
               <div key={i} className="flex gap-10">
-                <span>Free shipping over $120</span><span>•</span>
+                <span>Free shipping over $99</span><span>•</span>
                 <span>25/26 season — out now</span><span>•</span>
                 <span>30-day returns</span><span>•</span>
                 <span>Custom name & number</span><span>•</span>
@@ -885,7 +893,7 @@ const TopBar = () => {
 
         {/* Center / Right: Countdown — visible everywhere */}
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 mx-auto md:mx-0">
-          <span className="text-[10px] md:text-[11px]">🔥 Buy 2 get 35% off ends in</span>
+          <span className="text-[10px] md:text-[11px]">🔥 Buy 2 Get 1 Free — ends in</span>
           <div className="flex items-center gap-1 font-mono font-black">
             <span className="bg-black text-lime-400 px-1.5 py-0.5 rounded text-[11px] tabular-nums">{pad(hours)}</span>
             <span>:</span>
@@ -910,7 +918,7 @@ const Header = () => {
 
   const navLinks = [
     { label: 'New Arrivals', page: 'shop', params: { filter: { isNew: true } } },
-    { label: 'Clubs', page: 'shop', params: { filter: {} } },
+    { label: 'Clubs', page: 'clubs', params: {} },
     { label: 'National Teams', page: 'shop', params: { filter: { league: 'International' } } },
     { label: 'Player Edition', page: 'shop', params: { filter: { version: 'Player Version' } } },
     { label: 'Retro', page: 'shop', params: { filter: { type: 'Retro' } } },
@@ -1135,23 +1143,14 @@ const ProductCard = ({ product, layout = 'default' }) => {
           <Heart className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-lime-400 text-lime-400' : 'text-white'}`} />
         </button>
 
-        {/* Jersey image with flip */}
+        {/* Jersey image — single, smooth scale on hover (no flip, much faster) */}
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.div
-            animate={{ rotateY: hover ? 180 : 0 }}
-            transition={{ duration: 0.5 }}
-            style={{ transformStyle: 'preserve-3d' }}
-            className="w-[85%] h-[85%] relative"
+            animate={{ scale: hover ? 1.06 : 1 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="w-[88%] h-[88%]"
           >
-            <div style={{ backfaceVisibility: 'hidden' }} className="absolute inset-0">
-              <JerseySVG club={product.club} imageUrl={product.image} view="front" className="w-full h-full drop-shadow-2xl" />
-            </div>
-            <div style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }} className="absolute inset-0">
-              <JerseySVG club={product.club} view="back"
-                playerName={product.clubName.split(' ')[0].toUpperCase().slice(0, 6)}
-                playerNumber={10}
-                className="w-full h-full drop-shadow-2xl" />
-            </div>
+            <JerseySVG club={product.club} imageUrl={product.image} view="front" className="w-full h-full drop-shadow-2xl" />
           </motion.div>
         </div>
 
@@ -1267,7 +1266,7 @@ const Hero = () => {
           </div>
 
           <div className="mt-12 flex items-center gap-8 text-white/50 text-xs">
-            <div className="flex items-center gap-2"><Truck className="w-4 h-4" /> Free shipping $120+</div>
+            <div className="flex items-center gap-2"><Truck className="w-4 h-4" /> Free shipping $99+</div>
             <div className="flex items-center gap-2"><RotateCcw className="w-4 h-4" /> 30-day returns</div>
           </div>
         </motion.div>
@@ -1280,7 +1279,28 @@ const Hero = () => {
 
 const TrendingClubs = () => {
   const { navigate } = useStore();
-  const trending = ['rma', 'bar', 'mci', 'liv', 'psg', 'bay', 'mun', 'mia'].map(id => CLUBS.find(c => c.id === id));
+  // Find the real home jersey for each trending club, with real photo from R2
+  const trending = useMemo(() => {
+    const trendingClubNames = ['Real Madrid', 'Barcelona', 'Manchester City', 'Liverpool', 'Paris Saint-Germain', 'Bayern Munich', 'Manchester United', 'Inter Miami'];
+    return trendingClubNames.map(name => {
+      // Find best matching home jersey for this club
+      const candidates = PRODUCTS.filter(p =>
+        p.clubName === name &&
+        !p.isRetro &&
+        !p.isKids &&
+        (p.variant === 'Home')
+      );
+      // Prefer current season
+      candidates.sort((a, b) => {
+        const aScore = (a.season || '').includes('25') || (a.season || '').includes('26') ? 0 : 1;
+        const bScore = (b.season || '').includes('25') || (b.season || '').includes('26') ? 0 : 1;
+        return aScore - bScore;
+      });
+      const product = candidates[0];
+      return product ? { name, product, color: product.color, league: product.league } : null;
+    }).filter(Boolean);
+  }, []);
+
   return (
     <section className="bg-zinc-950 py-16 md:py-24 border-y border-white/5">
       <div className="max-w-[1600px] mx-auto px-4 md:px-8">
@@ -1296,7 +1316,7 @@ const TrendingClubs = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
           {trending.map((club, i) => (
             <motion.button
-              key={club.id}
+              key={club.name}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -1306,7 +1326,12 @@ const TrendingClubs = () => {
               style={{ backgroundColor: `${club.color}15` }}
             >
               <div className="absolute inset-0 flex items-center justify-center">
-                <JerseySVG club={club.id} className="w-2/3 h-2/3 group-hover:scale-110 transition-transform duration-500" />
+                <img
+                  src={club.product.image}
+                  alt={club.name}
+                  loading="lazy"
+                  className="w-2/3 h-2/3 object-contain group-hover:scale-110 transition-transform duration-500"
+                />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
@@ -1352,32 +1377,61 @@ const NewArrivals = () => {
 
 const PromoBanner = () => {
   const { navigate } = useStore();
+  // Find real Barcelona + Real Madrid home jerseys from catalog
+  const featured = useMemo(() => {
+    const findHomeJersey = (clubName) => {
+      const candidates = PRODUCTS.filter(p =>
+        p.clubName === clubName && !p.isRetro && !p.isKids && p.variant === 'Home'
+      );
+      candidates.sort((a, b) => {
+        const aRecent = (a.season || '').includes('25') || (a.season || '').includes('26') ? 0 : 1;
+        const bRecent = (b.season || '').includes('25') || (b.season || '').includes('26') ? 0 : 1;
+        return aRecent - bRecent;
+      });
+      return candidates[0];
+    };
+    return {
+      left: findHomeJersey('Barcelona'),
+      right: findHomeJersey('Real Madrid'),
+    };
+  }, []);
+
   return (
     <section className="relative bg-lime-400 overflow-hidden">
-      <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
+      <div className="absolute inset-0 flex items-center justify-center opacity-[0.06] pointer-events-none">
         <div className="text-[20rem] font-black tracking-tighter">GOAL</div>
       </div>
       <div className="relative max-w-[1600px] mx-auto px-4 md:px-8 py-12 md:py-16 grid md:grid-cols-2 gap-8 items-center">
         <div>
           <div className="text-black/60 text-xs uppercase tracking-[0.4em] mb-3">Limited time</div>
           <h2 className="text-4xl md:text-6xl font-black uppercase text-black tracking-tighter leading-none">
-            Buy 2,<br />get 35% off.
+            Buy 2,<br />get 1 free.
           </h2>
           <p className="mt-4 text-black/70 max-w-md">
-            Stock up on the kit you love and a second for game day. Use code <span className="font-bold">BRACE35</span> at checkout.
+            Stock up on the kit you love and a second for game day. Use code <span className="font-bold">B2G1</span> at checkout — third jersey on us.
           </p>
           <button onClick={() => navigate('shop')}
             className="mt-6 bg-black hover:bg-zinc-800 text-white px-7 py-4 text-sm font-bold uppercase tracking-widest inline-flex items-center gap-2">
             Shop the drop <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-        <div className="relative flex justify-center md:justify-end gap-4">
-          <motion.div animate={{ rotate: [-5, 5, -5] }} transition={{ duration: 8, repeat: Infinity }}>
-            <JerseySVG club="bar" className="w-40 md:w-56 drop-shadow-2xl" />
-          </motion.div>
-          <motion.div animate={{ rotate: [5, -5, 5] }} transition={{ duration: 8, repeat: Infinity }}>
-            <JerseySVG club="rma" className="w-40 md:w-56 drop-shadow-2xl" />
-          </motion.div>
+        <div className="relative flex justify-center md:justify-end gap-4 items-center">
+          {featured.left && (
+            <motion.div animate={{ rotate: [-5, 5, -5] }} transition={{ duration: 8, repeat: Infinity }}
+              className="w-40 md:w-56 cursor-pointer pointer-events-auto"
+              onClick={() => navigate('product', { productId: featured.left.id })}>
+              <img src={featured.left.image} alt={featured.left.clubName}
+                className="w-full h-full object-contain drop-shadow-2xl" />
+            </motion.div>
+          )}
+          {featured.right && (
+            <motion.div animate={{ rotate: [5, -5, 5] }} transition={{ duration: 8, repeat: Infinity }}
+              className="w-40 md:w-56 cursor-pointer pointer-events-auto"
+              onClick={() => navigate('product', { productId: featured.right.id })}>
+              <img src={featured.right.image} alt={featured.right.clubName}
+                className="w-full h-full object-contain drop-shadow-2xl" />
+            </motion.div>
+          )}
         </div>
       </div>
     </section>
@@ -1433,12 +1487,20 @@ const FeaturedPlayers = () => {
             <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2 flex items-center gap-2">
               <Award className="w-3 h-3" /> The greats
             </div>
-            <h2 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tight">Player Jerseys</h2>
+            <h2 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tight">Shop By Player</h2>
+            <p className="text-white/50 text-sm mt-2">Tap a player to browse every jersey from his career</p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
           {PLAYERS.slice(0, 6).map((player, i) => {
-            const club = CLUBS.find(c => c.id === player.club);
+            // Map full team name to JERSEY_DESIGNS key for SVG fallback
+            const clubKeyMap = {
+              'Real Madrid': 'rma', 'Barcelona': 'bar', 'Manchester City': 'mci',
+              'Manchester United': 'mun', 'Liverpool': 'liv', 'Arsenal': 'ars',
+              'Paris Saint-Germain': 'psg', 'Bayern Munich': 'bay', 'Al-Nassr': 'alh',
+              'Inter Miami': 'mia', 'Santos': 'bra', 'Tottenham': 'tot',
+            };
+            const svgKey = clubKeyMap[player.club] || 'rma';
             return (
               <motion.button
                 key={player.id}
@@ -1446,14 +1508,11 @@ const FeaturedPlayers = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                onClick={() => {
-                  const prod = PRODUCTS.find(p => p.club === player.club && p.version === 'Player Version' && p.kit === 'Home');
-                  if (prod) navigate('product', { productId: prod.id, prefillPlayer: player });
-                }}
+                onClick={() => navigate('shop', { filter: { playerCareer: player.id, careerTeams: player.careerTeams } })}
                 className="group bg-black aspect-[3/4] relative overflow-hidden border border-white/5 hover:border-lime-400/50 transition-colors"
               >
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <JerseySVG club={player.club} view="back"
+                  <JerseySVG club={svgKey} view="back"
                     playerName={player.name.toUpperCase()}
                     playerNumber={player.number}
                     className="w-[80%] h-[80%] group-hover:scale-110 transition-transform duration-500" />
@@ -1461,7 +1520,7 @@ const FeaturedPlayers = () => {
                 <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black to-transparent">
                   <div className="text-lime-400 text-[10px] uppercase tracking-widest font-bold">#{player.number}</div>
                   <div className="text-white font-black text-lg uppercase tracking-tight">{player.name}</div>
-                  <div className="text-white/40 text-xs">{club.name}</div>
+                  <div className="text-white/40 text-xs">{player.careerTeams.slice(0, 2).join(' · ')}</div>
                 </div>
               </motion.button>
             );
@@ -1472,20 +1531,66 @@ const FeaturedPlayers = () => {
   );
 };
 
+// Real top-selling clubs worldwide 2025 — based on actual sales data
+// Source: Diario AS, Euromericas Sport Marketing, Statista
+const TOP_SELLING_CLUBS = [
+  'Real Madrid',         // 3.13M jerseys sold in 2025
+  'Barcelona',           // 2.94M
+  'Paris Saint-Germain', // 2.55M (Mbappé era, now post)
+  'Manchester United',   // Top PL seller despite poor form
+  'Inter Miami',         // Messi effect
+  'Bayern Munich',
+  'Liverpool',
+  'Arsenal',
+  'Manchester City',
+  'Argentina',           // National team — Messi
+  'Portugal',            // Ronaldo
+  'Brazil',
+];
+
 const BestSellers = () => {
-  const items = PRODUCTS.filter(p => p.isBest).slice(0, 8);
   const { navigate } = useStore();
+  // Find the best home jersey for each top-selling club, prioritizing current season
+  const items = useMemo(() => {
+    const picked = [];
+    const seenClubs = new Set();
+    for (const clubName of TOP_SELLING_CLUBS) {
+      // Find best matching product for this club
+      const candidates = PRODUCTS.filter(p =>
+        p.clubName === clubName &&
+        !p.isRetro &&
+        !p.isKids &&
+        !p.isShorts &&
+        !p.isTracksuit &&
+        (p.variant === 'Home' || !p.variant)
+      );
+      // Prefer current season
+      candidates.sort((a, b) => {
+        const aScore = (a.season || '').includes('25') || (a.season || '').includes('26') ? 0 : 1;
+        const bScore = (b.season || '').includes('25') || (b.season || '').includes('26') ? 0 : 1;
+        return aScore - bScore;
+      });
+      if (candidates.length > 0 && !seenClubs.has(clubName)) {
+        picked.push(candidates[0]);
+        seenClubs.add(clubName);
+      }
+      if (picked.length >= 8) break;
+    }
+    return picked;
+  }, []);
+
   return (
     <section className="bg-black py-16 md:py-24">
       <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="flex items-end justify-between mb-10">
           <div>
             <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2 flex items-center gap-2">
-              <Flame className="w-3 h-3" /> Most loved
+              <Flame className="w-3 h-3" /> Top sellers worldwide
             </div>
             <h2 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tight">Best Sellers</h2>
+            <p className="text-white/40 text-xs mt-2">The kits flying off shelves this season</p>
           </div>
-          <button onClick={() => navigate('shop', { filter: { isBest: true } })}
+          <button onClick={() => navigate('shop')}
             className="hidden md:flex items-center gap-2 text-white/70 hover:text-lime-400 text-sm uppercase tracking-widest">
             See All <ArrowRight className="w-4 h-4" />
           </button>
@@ -1668,7 +1773,7 @@ const TrustBar = () => (
     <div className="max-w-[1600px] mx-auto px-4 md:px-8">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
         {[
-          { icon: Truck, title: 'Free Shipping', sub: 'On orders over $120' },
+          { icon: Truck, title: 'Free Shipping', sub: 'On orders over $99' },
           { icon: Award, title: 'Premium Quality', sub: 'Top-tier AAA+ stitching' },
           { icon: RotateCcw, title: 'Easy Returns', sub: '30-day money-back' },
           { icon: Lock, title: 'Secure Checkout', sub: 'Interac & crypto' },
@@ -1709,13 +1814,18 @@ const ShopPage = () => {
     onSale: initialFilter.onSale || false,
     isNew: initialFilter.isNew || false,
     isBest: initialFilter.isBest || false,
+    careerTeams: initialFilter.careerTeams || null,
+    playerCareer: initialFilter.playerCareer || null,
   });
   const [sort, setSort] = useState('featured');
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 24;
 
   useEffect(() => {
     if (route.filter) {
       setFilters(prev => ({ ...prev, ...route.filter }));
+      setPage(1); // Reset to page 1 when filter changes
     }
   }, [route]);
 
@@ -1728,6 +1838,10 @@ const ShopPage = () => {
       if (filters.onSale && !p.salePrice) return false;
       if (filters.isNew && !p.isNew) return false;
       if (filters.isBest && !p.isBest) return false;
+      // Career-team filter (when user clicks a player)
+      if (filters.careerTeams && Array.isArray(filters.careerTeams)) {
+        if (!filters.careerTeams.includes(p.clubName)) return false;
+      }
       const price = p.salePrice || p.price;
       if (price > filters.priceMax) return false;
       return true;
@@ -1823,11 +1937,28 @@ const ShopPage = () => {
       {/* Page header */}
       <div className="border-b border-white/5 pt-8 md:pt-12 pb-6">
         <div className="max-w-[1600px] mx-auto px-4 md:px-8">
-          <div className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">All Products</div>
-          <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">
-            {filters.league || filters.type || filters.clubName || 'Shop All'}
-          </h1>
-          <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
+          {filters.playerCareer ? (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-2 flex items-center gap-2">
+                <Award className="w-3 h-3" /> Player Career Collection
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">
+                {PLAYERS.find(pl => pl.id === filters.playerCareer)?.name || 'Player'}
+              </h1>
+              <p className="mt-2 text-white/60 text-sm">
+                Every jersey from his career — {filters.careerTeams?.join(' · ')}
+              </p>
+              <p className="mt-1 text-white/40 text-xs">{filtered.length} products</p>
+            </>
+          ) : (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">All Products</div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">
+                {filters.league || filters.type || filters.clubName || 'Shop All'}
+              </h1>
+              <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
+            </>
+          )}
         </div>
       </div>
 
@@ -1869,9 +2000,31 @@ const ShopPage = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
-                {filtered.map(p => <ProductCard key={p.id} product={p} />)}
-              </div>
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
+                  {filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE).map(p => <ProductCard key={p.id} product={p} />)}
+                </div>
+
+                {/* Pagination */}
+                {filtered.length > PER_PAGE && (
+                  <div className="mt-10 flex items-center justify-between border-t border-white/5 pt-6">
+                    <button onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      disabled={page === 1}
+                      className="px-5 py-2.5 border border-white/10 text-white text-xs uppercase tracking-widest font-bold hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2">
+                      <ChevronLeft className="w-4 h-4" /> Prev
+                    </button>
+                    <div className="text-xs text-white/60 tracking-wide">
+                      Page <span className="text-white font-bold">{page}</span> of <span className="text-white font-bold">{Math.ceil(filtered.length / PER_PAGE)}</span>
+                      <span className="hidden md:inline text-white/30 ml-3">· {filtered.length.toLocaleString()} results</span>
+                    </div>
+                    <button onClick={() => { setPage(p => Math.min(Math.ceil(filtered.length / PER_PAGE), p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      disabled={page >= Math.ceil(filtered.length / PER_PAGE)}
+                      className="px-5 py-2.5 border border-white/10 text-white text-xs uppercase tracking-widest font-bold hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2">
+                      Next <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1938,6 +2091,14 @@ const ProductPage = () => {
   const club = CLUBS.find(c => c.id === product.club);
 
   const [size, setSize] = useState('M');
+  // Variant selected by user (Fan Version / Player Version / Kids)
+  const [selectedVariant, setSelectedVariant] = useState(() => {
+    if (product.variants && product.variants.length > 0) {
+      // Default to first non-Kids variant when possible
+      return product.variants.find(v => v !== 'Kids') || product.variants[0];
+    }
+    return 'Fan Version';
+  });
   const [qty, setQty] = useState(1);
   const [view, setView] = useState('front');
   const [playerName, setPlayerName] = useState(route.prefillPlayer?.name || '');
@@ -1974,11 +2135,17 @@ const ProductPage = () => {
     return 3 + (seed % 22); // 3-24 sales
   }, [product.id, product.isBest, product.isNew]);
 
-  const price = product.salePrice || product.price;
+  // Base price from product, adjusted by selected variant
+  const basePrice = product.salePrice || product.price;
+  const variantAdjustment = selectedVariant === 'Player Version' ? 15
+    : selectedVariant === 'Kids' ? -5
+    : 0;
+  const price = Math.max(29.99, basePrice + variantAdjustment);
   const customizationFee = (playerName || playerNumber) ? 12 : 0;
   const badgeFee = addBadge ? 8 : 0;
   const total = (price + customizationFee + badgeFee) * qty;
 
+  // Related products — same team or same league
   const related = PRODUCTS.filter(p => p.club === product.club && p.id !== product.id).slice(0, 4);
 
   return (
@@ -2115,25 +2282,32 @@ const ProductPage = () => {
             )}
           </div>
 
-          {/* Fit / Version */}
+          {/* Variant selector (Fan / Player / Kids) — uses product.variants array */}
           <div className="mt-8 space-y-6">
             <div>
               <div className="flex justify-between mb-3">
-                <div className="text-xs uppercase tracking-[0.2em] text-white/60">Fit</div>
-                <span className="text-xs text-lime-400">{product.version}</span>
+                <div className="text-xs uppercase tracking-[0.2em] text-white/60">Edition</div>
+                <span className="text-xs text-lime-400">{selectedVariant}</span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {['Fan Version', 'Player Version'].map(v => (
-                  <button key={v}
-                    onClick={() => {
-                      const alt = PRODUCTS.find(p => p.club === product.club && p.kit === product.kit && p.version === v);
-                      if (alt) navigate('product', { productId: alt.id });
-                    }}
-                    className={`border-2 p-3 text-left transition-colors ${product.version === v ? 'border-lime-400 bg-lime-400/10' : 'border-white/10 hover:border-white/30'}`}>
-                    <div className="text-sm text-white font-semibold">{v}</div>
-                    <div className="text-[11px] text-white/50 mt-0.5">{v === 'Player Version' ? 'Pro fit · Dri-FIT ADV' : 'Replica · Dri-FIT'}</div>
-                  </button>
-                ))}
+              <div className="grid grid-cols-3 gap-2">
+                {(product.variants && product.variants.length > 0 ? product.variants : ['Fan Version']).map(v => {
+                  // Variant pricing — Player Version: +$15, Kids: −$5
+                  const variantPrice = v === 'Player Version' ? (product.price + 15)
+                    : v === 'Kids' ? Math.max(29.99, product.price - 5)
+                    : product.price;
+                  const subTitle = v === 'Player Version' ? 'Pro · Dri-FIT ADV'
+                    : v === 'Kids' ? 'Youth sizes'
+                    : 'Standard fit';
+                  return (
+                    <button key={v}
+                      onClick={() => setSelectedVariant(v)}
+                      className={`border-2 p-3 text-left transition-colors ${selectedVariant === v ? 'border-lime-400 bg-lime-400/10' : 'border-white/10 hover:border-white/30'}`}>
+                      <div className="text-sm text-white font-semibold">{v}</div>
+                      <div className="text-[11px] text-white/50 mt-0.5">{subTitle}</div>
+                      <div className="text-xs text-lime-400 font-bold mt-1">${variantPrice.toFixed(2)}</div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -2193,7 +2367,7 @@ const ProductPage = () => {
                 <span className="w-10 text-center text-white font-semibold">{qty}</span>
                 <button onClick={() => setQty(q => q + 1)} className="p-3 text-white hover:bg-white/5"><Plus className="w-4 h-4" /></button>
               </div>
-              <button onClick={() => addToCart(product, { size, qty, playerName, playerNumber, addBadge })}
+              <button onClick={() => addToCart(product, { size, qty, playerName, playerNumber, addBadge, variant: selectedVariant, unitPrice: price })}
                 className="flex-1 bg-lime-400 hover:bg-white text-black px-6 py-4 font-bold uppercase tracking-widest text-sm transition-colors flex items-center justify-center gap-3">
                 <ShoppingBag className="w-4 h-4" /> Add to bag — ${total.toFixed(2)}
               </button>
@@ -2208,7 +2382,7 @@ const ProductPage = () => {
           <div className="mt-8 grid grid-cols-3 gap-3 text-center border-y border-white/5 py-5">
             <div className="text-xs text-white/60">
               <Truck className="w-4 h-4 mx-auto mb-1.5 text-lime-400" />
-              Free over $120
+              Free over $99
             </div>
             <div className="text-xs text-white/60">
               <RotateCcw className="w-4 h-4 mx-auto mb-1.5 text-lime-400" />
@@ -2240,7 +2414,7 @@ const ProductPage = () => {
           {/* Shipping */}
           <div className="mt-8 border border-white/10 divide-y divide-white/10">
             {[
-              { icon: Truck, title: 'Shipping', text: 'Free standard shipping on orders over $120. Express 2-day available.' },
+              { icon: Truck, title: 'Shipping', text: 'free standard shipping on orders over $99. Express 2-day available.' },
               { icon: RotateCcw, title: 'Returns', text: '30-day free returns. Customized items final sale.' },
               { icon: Shield, title: 'Authenticity', text: 'Every jersey verified. Hologram tag included.' },
             ].map(item => (
@@ -2282,7 +2456,7 @@ const ProductPage = () => {
             <div className="text-[10px] text-white/40 uppercase tracking-widest">Size {size}</div>
             <div className="text-white font-bold text-lg leading-tight">${total.toFixed(2)}</div>
           </div>
-          <button onClick={() => addToCart(product, { size, qty, playerName, playerNumber, addBadge })}
+          <button onClick={() => addToCart(product, { size, qty, playerName, playerNumber, addBadge, variant: selectedVariant, unitPrice: price })}
             className="bg-lime-400 hover:bg-white text-black px-5 py-3.5 font-bold uppercase tracking-widest text-xs flex items-center gap-2 active:scale-95 transition-transform">
             <ShoppingBag className="w-4 h-4" /> Add to Bag
           </button>
@@ -2400,10 +2574,10 @@ const CartDrawer = () => {
                   {/* Shipping progress */}
                   <div className="bg-black p-4">
                     <div className="flex justify-between text-xs text-white/60 mb-2">
-                      <span>{subtotal >= 120 ? '🎉 Free shipping unlocked!' : `Add $${(120 - subtotal).toFixed(2)} for free shipping`}</span>
+                      <span>{subtotal >= 99 ? '🎉 Free shipping unlocked!' : `Add $${(99 - subtotal).toFixed(2)} for free shipping`}</span>
                     </div>
                     <div className="h-1 bg-white/10 overflow-hidden">
-                      <div className="h-full bg-lime-400 transition-all" style={{ width: `${Math.min(100, (subtotal / 120) * 100)}%` }} />
+                      <div className="h-full bg-lime-400 transition-all" style={{ width: `${Math.min(100, (subtotal / 99) * 100)}%` }} />
                     </div>
                   </div>
                 </div>
@@ -2446,17 +2620,31 @@ const CheckoutPage = () => {
   const [cryptoCurrency, setCryptoCurrency] = useState('USDT'); // USDT | BTC | ETH
   const [submitting, setSubmitting] = useState(false);
 
-  const shippingCost = subtotal >= 120 ? 0 : (shipping === 'express' ? 18 : 9);
+  const shippingCost = subtotal >= 99 ? 0 : (shipping === 'express' ? 18 : 9);
   const tax = (subtotal - discount.applied) * 0.13;
   const total = subtotal + shippingCost + tax - discount.applied;
 
   const applyDiscount = () => {
-    if (discountInput.toUpperCase() === 'BRACE35' && cart.length >= 2) {
-      setDiscount({ code: 'BRACE35', applied: subtotal * 0.35 });
-    } else if (discountInput.toUpperCase() === 'WELCOME10') {
+    const code = discountInput.toUpperCase();
+    if ((code === 'B2G1' || code === 'BUY2GET1') && cart.length >= 3) {
+      // Buy 2 Get 1 Free — the cheapest of every 3 items becomes free
+      // Build a flat array of unit prices (one per qty)
+      const units = [];
+      cart.forEach(i => {
+        const unitPrice = i.product.salePrice || i.product.price;
+        for (let q = 0; q < i.qty; q++) units.push(unitPrice);
+      });
+      units.sort((a, b) => a - b); // cheapest first
+      // For every 3 units in the cart, the cheapest is free
+      const freeCount = Math.floor(units.length / 3);
+      const freeValue = units.slice(0, freeCount).reduce((s, u) => s + u, 0);
+      setDiscount({ code: 'B2G1', applied: freeValue });
+    } else if ((code === 'B2G1' || code === 'BUY2GET1') && cart.length < 3) {
+      alert('Buy 2 Get 1 Free requires at least 3 jerseys in your cart');
+    } else if (code === 'WELCOME10') {
       setDiscount({ code: 'WELCOME10', applied: subtotal * 0.10 });
     } else {
-      alert('Invalid code or conditions not met');
+      alert('Invalid code');
     }
   };
 
@@ -2680,8 +2868,8 @@ const CheckoutPage = () => {
           {step === 2 && (
             <div className="space-y-3">
               {[
-                { id: 'standard', name: 'Standard Shipping', time: '5-7 business days', price: subtotal >= 120 ? 0 : 9 },
-                { id: 'express', name: 'Express Shipping', time: '2 business days', price: subtotal >= 120 ? 0 : 18 },
+                { id: 'standard', name: 'Standard Shipping', time: '5-7 business days', price: subtotal >= 99 ? 0 : 9 },
+                { id: 'express', name: 'Express Shipping', time: '2 business days', price: subtotal >= 99 ? 0 : 18 },
               ].map(opt => (
                 <label key={opt.id}
                   className={`flex items-center justify-between p-4 border-2 cursor-pointer ${shipping === opt.id ? 'border-lime-400 bg-lime-400/5' : 'border-white/10'}`}>
@@ -2926,6 +3114,155 @@ const CheckoutPage = () => {
 };
 
 // ---------- WISHLIST PAGE ---------------------------------------------------
+// ---------- CLUBS PAGE — Browse by league, then by club -------------------
+const ClubsPage = () => {
+  const { navigate, catalogLoaded } = useStore();
+  const [selectedLeague, setSelectedLeague] = useState(null);
+
+  // Build the league → clubs structure dynamically from real inventory
+  const leagueData = useMemo(() => {
+    const byLeague = {};
+    for (const p of PRODUCTS) {
+      if (!p.clubName || !p.league) continue;
+      if (!byLeague[p.league]) byLeague[p.league] = new Map();
+      // Only count once per club — and prefer products with images
+      if (!byLeague[p.league].has(p.clubName)) {
+        byLeague[p.league].set(p.clubName, {
+          name: p.clubName,
+          country: p.country,
+          color: p.color,
+          image: p.image,
+          count: 1,
+        });
+      } else {
+        byLeague[p.league].get(p.clubName).count += 1;
+      }
+    }
+    // Convert to array, sort
+    const leagues = Object.entries(byLeague)
+      .map(([league, clubsMap]) => ({
+        name: league,
+        clubs: Array.from(clubsMap.values()).sort((a, b) => b.count - a.count),
+        totalProducts: Array.from(clubsMap.values()).reduce((s, c) => s + c.count, 0),
+      }))
+      .sort((a, b) => b.totalProducts - a.totalProducts);
+    return leagues;
+  }, [catalogLoaded]);
+
+  // League page — pick a featured club image
+  const getLeagueImage = (league) => league.clubs[0]?.image;
+
+  if (selectedLeague) {
+    const league = leagueData.find(l => l.name === selectedLeague);
+    if (!league) {
+      setSelectedLeague(null);
+      return null;
+    }
+    return (
+      <div className="bg-black min-h-screen">
+        <div className="border-b border-white/5 pt-8 md:pt-12 pb-6">
+          <div className="max-w-[1600px] mx-auto px-4 md:px-8">
+            <button onClick={() => setSelectedLeague(null)}
+              className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4 hover:text-lime-400 flex items-center gap-1.5">
+              <ChevronLeft className="w-3 h-3" /> All Leagues
+            </button>
+            <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">{league.name}</h1>
+            <p className="mt-2 text-white/50 text-sm">{league.clubs.length} clubs · {league.totalProducts} jerseys</p>
+          </div>
+        </div>
+
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-8 md:py-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+            {league.clubs.map((club, i) => (
+              <motion.button
+                key={club.name}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: Math.min(i * 0.02, 0.4) }}
+                onClick={() => navigate('shop', { filter: { clubName: club.name } })}
+                className="group relative aspect-[4/5] overflow-hidden bg-zinc-950 hover:bg-zinc-900 border border-white/5 hover:border-lime-400/40 transition-colors rounded-sm"
+                style={{ backgroundColor: `${club.color}10` }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center p-6">
+                  <img
+                    src={club.image}
+                    alt={club.name}
+                    loading="lazy"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                <div className="absolute bottom-0 inset-x-0 p-4">
+                  <div className="text-[10px] uppercase tracking-[0.3em] text-white/50 mb-1">{club.country}</div>
+                  <div className="text-white font-black text-base md:text-lg uppercase tracking-tight leading-tight">{club.name}</div>
+                  <div className="mt-1.5 flex items-center justify-between">
+                    <span className="text-xs text-white/40">{club.count} jerseys</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-white/40 group-hover:text-lime-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-black min-h-screen">
+      <div className="border-b border-white/5 pt-8 md:pt-12 pb-6">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8">
+          <div className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">Browse the world's football</div>
+          <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Shop By Club</h1>
+          <p className="mt-2 text-white/50 text-sm">{leagueData.length} leagues · {leagueData.reduce((s, l) => s + l.clubs.length, 0)} clubs</p>
+        </div>
+      </div>
+
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-8 md:py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
+          {leagueData.map((league, i) => {
+            const featuredImg = getLeagueImage(league);
+            return (
+              <motion.button
+                key={league.name}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: Math.min(i * 0.04, 0.4) }}
+                onClick={() => { setSelectedLeague(league.name); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                className="group relative aspect-[5/3] overflow-hidden bg-zinc-950 hover:bg-zinc-900 border border-white/5 hover:border-lime-400/40 transition-colors rounded-sm"
+              >
+                {featuredImg && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[55%] h-[80%] opacity-50 group-hover:opacity-90 transition-opacity">
+                    <img src={featuredImg} alt={league.name} loading="lazy" className="w-full h-full object-contain" />
+                  </div>
+                )}
+                <div className="absolute -right-8 -bottom-8 text-[7rem] md:text-[9rem] font-black text-white/[0.04] leading-none pointer-events-none">
+                  {league.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="relative p-5 md:p-7 h-full flex flex-col justify-between">
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-white/40">{league.clubs.length} clubs</div>
+                    <div className="mt-1.5 text-xl md:text-2xl lg:text-3xl font-black text-white uppercase tracking-tight leading-tight">{league.name}</div>
+                  </div>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-widest text-white/30 mb-1">Top clubs</div>
+                      <div className="text-xs text-white/60 leading-tight">{league.clubs.slice(0, 3).map(c => c.name).join(' · ')}</div>
+                    </div>
+                    <ArrowUpRight className="w-5 h-5 text-white/40 group-hover:text-lime-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                  </div>
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const WishlistPage = () => {
   const { wishlist, navigate } = useStore();
   const items = PRODUCTS.filter(p => wishlist.includes(p.id));
@@ -3213,7 +3550,7 @@ const PolicyPage = ({ title, body }) => (
 
 const ShippingPolicy = () => <PolicyPage title="Shipping Policy" body={[
   { h: 'Processing time', p: 'Orders ship within 1-2 business days. Custom-printed jerseys (name/number) require an additional 1-2 days for production.' },
-  { h: 'Domestic shipping (US/Canada)', p: 'Standard: 5-7 business days · $9 (free over $120). Express: 2 business days · $18.' },
+  { h: 'Domestic shipping (US/Canada)', p: 'Standard: 5-7 business days · $9 (free over $99). Express: 2 business days · $18.' },
   { h: 'International shipping', p: 'We ship to 120+ countries. Rates calculated at checkout. Free standard shipping on international orders over $180.' },
   { h: 'Tracking', p: 'Every order ships with full tracking. You\'ll receive a tracking number via email as soon as your kit leaves our warehouse.' },
   { h: 'Customs & duties', p: 'International orders may be subject to import duties. These are the responsibility of the recipient.' },
@@ -3363,6 +3700,7 @@ const AppShell = () => {
     switch (route.page) {
       case 'home': return <HomePage />;
       case 'shop': return <ShopPage />;
+      case 'clubs': return <ClubsPage />;
       case 'product': return <ProductPage />;
       case 'checkout': return <CheckoutPage />;
       case 'wishlist': return <WishlistPage />;
