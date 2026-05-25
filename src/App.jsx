@@ -1049,10 +1049,11 @@ const Header = () => {
   }, []);
 
   const navLinks = [
+    { label: 'World Cup 2026', page: 'shop', params: { filter: { wc2026: true } }, highlight: true },
     { label: 'New Arrivals', page: 'shop', params: { filter: { isNew: true } } },
     { label: 'Clubs', page: 'clubs', params: {} },
     { label: 'National Teams', page: 'shop', params: { filter: { league: 'International' } } },
-    { label: 'Player Edition', page: 'shop', params: { filter: { version: 'Player Version' } } },
+    { label: 'Kids', page: 'shop', params: { filter: { kidsOnly: true } } },
     { label: 'Retro', page: 'shop', params: { filter: { type: 'Retro' } } },
     { label: 'Sale', page: 'shop', params: { filter: { onSale: true } } },
   ];
@@ -1072,13 +1073,15 @@ const Header = () => {
             <span className="hidden md:inline text-[9px] uppercase tracking-[0.3em] text-white/40 ml-1 self-end mb-1"></span>
           </button>
 
-          <nav className="hidden lg:flex items-center gap-7 text-[13px] font-medium uppercase tracking-wide">
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-7 text-[13px] font-medium uppercase tracking-wide">
             {navLinks.map(l => (
               <button key={l.label}
                 onClick={() => navigate(l.page, l.params)}
-                className="text-white/80 hover:text-lime-400 transition-colors relative group">
+                className={`${l.highlight ? 'bg-lime-400 text-black px-3 py-1.5 rounded-sm hover:bg-white' : 'text-white/80 hover:text-lime-400'} transition-colors relative group`}>
                 {l.label}
-                <span className="absolute -bottom-1 left-0 right-0 h-px bg-lime-400 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+                {!l.highlight && (
+                  <span className="absolute -bottom-1 left-0 right-0 h-px bg-lime-400 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+                )}
               </button>
             ))}
           </nav>
@@ -1115,12 +1118,13 @@ const Header = () => {
 const MobileMenu = () => {
   const { menuOpen, setMenuOpen, navigate } = useStore();
   const sections = [
+    { label: 'World Cup 2026', page: 'shop', params: { filter: { wc2026: true } }, highlight: true },
     { label: 'New Arrivals', page: 'shop', params: { filter: { isNew: true } } },
     { label: 'Best Sellers', page: 'shop', params: { filter: { isBest: true } } },
-    { label: 'Player Edition', page: 'shop', params: { filter: { version: 'Player Version' } } },
-    { label: 'Fan Edition', page: 'shop', params: { filter: { version: 'Fan Version' } } },
-    { label: 'Retro Jerseys', page: 'shop', params: { filter: { type: 'Retro' } } },
+    { label: 'Clubs', page: 'clubs', params: {} },
     { label: 'National Teams', page: 'shop', params: { filter: { league: 'International' } } },
+    { label: 'Kids Jerseys', page: 'shop', params: { filter: { kidsOnly: true } } },
+    { label: 'Retro Jerseys', page: 'shop', params: { filter: { type: 'Retro' } } },
     { label: 'Training Kits', page: 'shop', params: { filter: { type: 'Training Kit' } } },
     { label: 'Sale', page: 'shop', params: { filter: { onSale: true } } },
   ];
@@ -1231,7 +1235,7 @@ const SearchOverlay = () => {
                       <div className="text-white font-medium truncate group-hover:text-lime-400">{p.name}</div>
                       <div className="text-xs text-white/40">{p.league} · {p.version}</div>
                     </div>
-                    <div className="text-white font-bold">${p.salePrice || p.price}</div>
+                    <div className="text-white font-bold">${(p.salePrice || p.price).toFixed(2)}</div>
                   </button>
                 ))}
               </div>
@@ -1303,8 +1307,8 @@ const ProductCard = ({ product, layout = 'default' }) => {
           {product.name}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-white font-bold">${price}</span>
-          {onSale && <span className="text-white/40 line-through text-xs">${product.price}</span>}
+          <span className="text-white font-bold">${price.toFixed(2)}</span>
+          {onSale && <span className="text-white/40 line-through text-xs">${product.price.toFixed(2)}</span>}
         </div>
       </div>
     </motion.div>
@@ -1809,7 +1813,7 @@ const RetroSection = () => {
           </h2>
           <p className="mt-6 text-white/60 max-w-md">
             Iconic kits from the eras that defined football. Maradona '86. Ronaldinho's Barça. Istanbul 2005.
-            All authentically recreated for a new generation.
+            Reborn for a new generation.
           </p>
           <button onClick={() => navigate('shop', { filter: { type: 'Retro' } })}
             className="mt-7 bg-amber-500 hover:bg-amber-400 text-black px-7 py-4 text-sm font-bold uppercase tracking-widest inline-flex items-center gap-2">
@@ -1960,15 +1964,25 @@ const HomePage = () => (
 );
 
 // ---------- WORLD CUP 2026 SECTION ----------------------------------------
+// 2026 FIFA World Cup — only teams that are actually qualified or strongly trending
+// Italy DID NOT qualify (failed to qualify in past two cycles too) — removed
 const WORLD_CUP_TEAMS = [
-  { name: 'Argentina', emoji: '🇦🇷' }, { name: 'Brazil', emoji: '🇧🇷' },
-  { name: 'France', emoji: '🇫🇷' }, { name: 'England', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { name: 'Portugal', emoji: '🇵🇹' }, { name: 'Spain', emoji: '🇪🇸' },
-  { name: 'Germany', emoji: '🇩🇪' }, { name: 'Italy', emoji: '🇮🇹' },
-  { name: 'Netherlands', emoji: '🇳🇱' }, { name: 'Mexico', emoji: '🇲🇽' },
-  { name: 'USA', emoji: '🇺🇸' }, { name: 'Canada', emoji: '🇨🇦' },
-  { name: 'Japan', emoji: '🇯🇵' }, { name: 'Morocco', emoji: '🇲🇦' },
-  { name: 'Croatia', emoji: '🇭🇷' }, { name: 'Belgium', emoji: '🇧🇪' },
+  { name: 'Argentina', emoji: '🇦🇷' },
+  { name: 'Brazil', emoji: '🇧🇷' },
+  { name: 'France', emoji: '🇫🇷' },
+  { name: 'England', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { name: 'Portugal', emoji: '🇵🇹' },
+  { name: 'Spain', emoji: '🇪🇸' },
+  { name: 'Germany', emoji: '🇩🇪' },
+  { name: 'Netherlands', emoji: '🇳🇱' },
+  { name: 'Mexico', emoji: '🇲🇽' },
+  { name: 'USA', emoji: '🇺🇸' },
+  { name: 'Canada', emoji: '🇨🇦' },
+  { name: 'Morocco', emoji: '🇲🇦' },
+  { name: 'Japan', emoji: '🇯🇵' },
+  { name: 'Croatia', emoji: '🇭🇷' },
+  { name: 'Belgium', emoji: '🇧🇪' },
+  { name: 'South Korea', emoji: '🇰🇷' },
 ];
 
 const WorldCup2026 = () => {
@@ -2099,31 +2113,35 @@ const TrustBar = () => (
 // ---------- SHOP PAGE -------------------------------------------------------
 const ShopPage = () => {
   const { route, catalogLoaded } = useStore();
-  const initialFilter = route.filter || {};
-  const [filters, setFilters] = useState({
-    league: initialFilter.league || '',
-    type: initialFilter.type || '',
-    version: initialFilter.version || '',
-    clubName: initialFilter.clubName || '',
+  // Build a clean filter state from a route filter object (no carry-over from prev)
+  const buildFilterState = (rf = {}) => ({
+    league: rf.league || '',
+    type: rf.type || '',
+    version: rf.version || '',
+    clubName: rf.clubName || '',
     size: '',
-    priceMax: 200,
-    onSale: initialFilter.onSale || false,
-    isNew: initialFilter.isNew || false,
-    isBest: initialFilter.isBest || false,
-    careerTeams: initialFilter.careerTeams || null,
-    careerHistory: initialFilter.careerHistory || null,
-    playerCareer: initialFilter.playerCareer || null,
+    priceMin: null,
+    priceMax: rf.priceMax || 100,
+    onSale: !!rf.onSale,
+    isNew: !!rf.isNew,
+    isBest: !!rf.isBest,
+    wc2026: !!rf.wc2026,
+    kidsOnly: !!rf.kidsOnly,
+    careerTeams: rf.careerTeams || null,
+    careerHistory: rf.careerHistory || null,
+    playerCareer: rf.playerCareer || null,
   });
+  const [filters, setFilters] = useState(() => buildFilterState(route.filter));
   const [sort, setSort] = useState('featured');
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [page, setPage] = useState(1);
   const PER_PAGE = 24;
 
+  // When the route changes (user clicks a new category), FULLY REPLACE filter state
+  // This prevents stale filter carry-over (e.g. league filter persisting after clicking a different nav link)
   useEffect(() => {
-    if (route.filter) {
-      setFilters(prev => ({ ...prev, ...route.filter }));
-      setPage(1); // Reset to page 1 when filter changes
-    }
+    setFilters(buildFilterState(route.filter));
+    setPage(1);
   }, [route]);
 
   // Helper: extract starting year from a product's season string ("25/26" → 2025, "2025/26" → 2025, "1990" → 1990)
@@ -2174,6 +2192,19 @@ const ShopPage = () => {
       if (filters.onSale && !p.salePrice) return false;
       if (filters.isNew && !p.isNew) return false;
       if (filters.isBest && !p.isBest) return false;
+
+      // World Cup 2026 filter — qualified national teams only, current/upcoming home kits
+      if (filters.wc2026) {
+        const wcTeams = ['Argentina','Brazil','France','England','Portugal','Spain','Germany','Netherlands','Mexico','USA','Canada','Morocco','Japan','Croatia','Belgium','South Korea','Senegal','Australia','Switzerland','Denmark','Uruguay','Colombia','Ecuador','Norway'];
+        if (!wcTeams.includes(p.clubName)) return false;
+        if (p.variant !== 'Home') return false;
+        if (p.isRetro || p.isKids || p.isShorts || p.isTracksuit || p.isTraining || p.isGoalkeeper || p.isLongSleeve) return false;
+      }
+
+      // Kids-only filter — show all jerseys with a Kids variant available
+      if (filters.kidsOnly) {
+        if (!p.isKids && !(p.variants && p.variants.includes('Kids'))) return false;
+      }
 
       // Player CAREER filter (when user clicks a player) — strict team + season window
       if (filters.careerHistory && Array.isArray(filters.careerHistory)) {
@@ -2239,16 +2270,14 @@ const ShopPage = () => {
       </div>
 
       <div className="border-t border-white/5 pt-6">
-        <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">Edition</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">Fit</div>
         <div className="space-y-2">
           {[
-            { val: '', label: 'All Editions' },
-            { val: 'Player Version', label: 'Player Version' },
-            { val: 'Fan Version', label: 'Fan Version' },
-            { val: 'Kids', label: 'Kids' },
+            { val: false, label: 'All Sizes' },
+            { val: true, label: 'Kids Only' },
           ].map(opt => (
-            <button key={opt.val || 'all'} onClick={() => setFilters(f => ({ ...f, version: opt.val }))}
-              className={`block w-full text-left text-sm py-1 ${filters.version === opt.val ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
+            <button key={String(opt.val)} onClick={() => setFilters(f => ({ ...f, kidsOnly: opt.val }))}
+              className={`block w-full text-left text-sm py-1 ${filters.kidsOnly === opt.val ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
               {opt.label}
             </button>
           ))}
@@ -2343,6 +2372,41 @@ const ShopPage = () => {
                 Every jersey from his career — {filters.careerTeams?.join(' · ')}
               </p>
               <p className="mt-1 text-white/40 text-xs">{filtered.length} products</p>
+            </>
+          ) : filters.wc2026 ? (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-2 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-lime-400 rounded-full animate-pulse" /> FIFA World Cup · June 2026
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">
+                Road To 26
+              </h1>
+              <p className="mt-2 text-white/60 text-sm">Home kits from every qualified nation</p>
+              <p className="mt-1 text-white/40 text-xs">{filtered.length} products</p>
+            </>
+          ) : filters.kidsOnly ? (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">For the next generation</div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Kids Jerseys</h1>
+              <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
+            </>
+          ) : filters.isNew ? (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-2">Just dropped</div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">New Arrivals</h1>
+              <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
+            </>
+          ) : filters.isBest ? (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-2">Most loved worldwide</div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Best Sellers</h1>
+              <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
+            </>
+          ) : filters.onSale ? (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-2">Limited time</div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Sale</h1>
+              <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
             </>
           ) : (
             <>
@@ -2485,14 +2549,9 @@ const ProductPage = () => {
   const club = CLUBS.find(c => c.id === product.club);
 
   const [size, setSize] = useState('M');
-  // Variant selected by user (Fan Version / Player Version / Kids)
-  const [selectedVariant, setSelectedVariant] = useState(() => {
-    if (product.variants && product.variants.length > 0) {
-      // Default to first non-Kids variant when possible
-      return product.variants.find(v => v !== 'Kids') || product.variants[0];
-    }
-    return 'Fan Version';
-  });
+  // Variant: Men's or Kids only (no Player/Fan distinction)
+  const hasKidsVariant = product.variants && product.variants.includes('Kids');
+  const [selectedVariant, setSelectedVariant] = useState("Men's");
   const [qty, setQty] = useState(1);
   const [view, setView] = useState('front');
   const [playerName, setPlayerName] = useState(route.prefillPlayer?.name || '');
@@ -2508,7 +2567,6 @@ const ProductPage = () => {
   }, [product?.id]);
 
   // Live viewer count — psychologically realistic (8-34 viewers, fluctuates every few seconds)
-  // Uses product.id as seed so it's stable per product but varies between them
   const [viewerCount, setViewerCount] = useState(() => {
     const seed = product.id.charCodeAt(1) || 12;
     return 8 + (seed % 27);
@@ -2516,25 +2574,23 @@ const ProductPage = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setViewerCount(v => {
-        const drift = Math.floor(Math.random() * 5) - 2; // -2 to +2
+        const drift = Math.floor(Math.random() * 5) - 2;
         return Math.max(6, Math.min(38, v + drift));
       });
     }, 4500);
     return () => clearInterval(interval);
   }, []);
 
-  // Recent sales social proof — "X sold in last 24h" — stable per product
+  // Recent sales social proof — "X sold in last 24h"
   const recentSales = useMemo(() => {
     const seed = (product.id.charCodeAt(1) || 0) + (product.isBest ? 18 : 0) + (product.isNew ? 12 : 0);
-    return 3 + (seed % 22); // 3-24 sales
+    return 3 + (seed % 22);
   }, [product.id, product.isBest, product.isNew]);
 
-  // Base price from product, adjusted by selected variant
+  // Pricing — uses product price directly (no variant markup since training/jersey is set in catalog)
+  // Kids variant gets a small discount
   const basePrice = product.salePrice || product.price;
-  const variantAdjustment = selectedVariant === 'Player Version' ? 15
-    : selectedVariant === 'Kids' ? -5
-    : 0;
-  const price = Math.max(29.99, basePrice + variantAdjustment);
+  const price = selectedVariant === 'Kids' ? Math.max(29.99, basePrice - 10) : basePrice;
   const customizationFee = (playerName || playerNumber) ? 10 : 0;
   const badgeFee = addBadge ? 7 : 0;
   const total = (price + customizationFee + badgeFee) * qty;
@@ -2621,9 +2677,9 @@ const ProductPage = () => {
           </div>
 
           <div className="mt-6 flex items-baseline gap-3">
-            <span className="text-4xl font-black text-white">${price}</span>
-            {product.salePrice && <span className="text-lg text-white/40 line-through">${product.price}</span>}
-            {product.salePrice && <span className="text-sm text-lime-400 font-semibold">Save ${product.price - product.salePrice}</span>}
+            <span className="text-4xl font-black text-white">${price.toFixed(2)}</span>
+            {product.salePrice && <span className="text-lg text-white/40 line-through">${product.price.toFixed(2)}</span>}
+            {product.salePrice && <span className="text-sm text-lime-400 font-semibold">Save ${(product.price - product.salePrice).toFixed(2)}</span>}
           </div>
 
           <div className="mt-2 flex items-center gap-2 text-xs text-white/50">
@@ -2676,34 +2732,30 @@ const ProductPage = () => {
             )}
           </div>
 
-          {/* Variant selector (Fan / Player / Kids) — uses product.variants array */}
+          {/* Variant selector — Men's only, or Men's + Kids if catalog has Kids version */}
           <div className="mt-8 space-y-6">
-            <div>
-              <div className="flex justify-between mb-3">
-                <div className="text-xs uppercase tracking-[0.2em] text-white/60">Edition</div>
-                <span className="text-xs text-lime-400">{selectedVariant}</span>
+            {hasKidsVariant && (
+              <div>
+                <div className="flex justify-between mb-3">
+                  <div className="text-xs uppercase tracking-[0.2em] text-white/60">Fit</div>
+                  <span className="text-xs text-lime-400">{selectedVariant}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {["Men's", "Kids"].map(v => {
+                    const vPrice = v === 'Kids' ? Math.max(29.99, product.price - 10) : product.price;
+                    return (
+                      <button key={v}
+                        onClick={() => setSelectedVariant(v)}
+                        className={`border-2 p-3 text-left transition-colors ${selectedVariant === v ? 'border-lime-400 bg-lime-400/10' : 'border-white/10 hover:border-white/30'}`}>
+                        <div className="text-sm text-white font-semibold">{v}</div>
+                        <div className="text-[11px] text-white/50 mt-0.5">{v === 'Kids' ? 'Youth sizes' : 'Standard'}</div>
+                        <div className="text-xs text-lime-400 font-bold mt-1">${vPrice.toFixed(2)}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {(product.variants && product.variants.length > 0 ? product.variants : ['Fan Version']).map(v => {
-                  // Variant pricing — Player Version: +$15, Kids: −$5
-                  const variantPrice = v === 'Player Version' ? (product.price + 15)
-                    : v === 'Kids' ? Math.max(29.99, product.price - 5)
-                    : product.price;
-                  const subTitle = v === 'Player Version' ? 'Pro · Dri-FIT ADV'
-                    : v === 'Kids' ? 'Youth sizes'
-                    : 'Standard fit';
-                  return (
-                    <button key={v}
-                      onClick={() => setSelectedVariant(v)}
-                      className={`border-2 p-3 text-left transition-colors ${selectedVariant === v ? 'border-lime-400 bg-lime-400/10' : 'border-white/10 hover:border-white/30'}`}>
-                      <div className="text-sm text-white font-semibold">{v}</div>
-                      <div className="text-[11px] text-white/50 mt-0.5">{subTitle}</div>
-                      <div className="text-xs text-lime-400 font-bold mt-1">${variantPrice.toFixed(2)}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            )}
 
             {/* Size */}
             <div>
@@ -2784,7 +2836,7 @@ const ProductPage = () => {
             </div>
             <div className="text-xs text-white/60">
               <Shield className="w-4 h-4 mx-auto mb-1.5 text-lime-400" />
-              Authentic
+              Quality stitching
             </div>
           </div>
 
@@ -2792,13 +2844,10 @@ const ProductPage = () => {
           <div className="mt-8 space-y-4">
             <h2 className="text-xs uppercase tracking-[0.2em] text-white/60">Description</h2>
             <p className="text-white/70 leading-relaxed">
-              The official {product.season} {product.clubName} {product.kit.toLowerCase()} jersey, engineered for performance and built for the terraces.
-              {product.version === 'Player Version'
-                ? ' This is the same shirt worn on the pitch — featuring Dri-FIT ADV technology, laser-cut perforations and a tailored athletic fit for unrestricted movement.'
-                : ' Cut for everyday wear with a relaxed fit, classic crew neck and lightweight Dri-FIT fabric that keeps you cool from kickoff to final whistle.'}
+              The {product.season} {product.clubName} {(product.kit || '').toLowerCase()} kit. Premium AAA+ quality stitching, breathable fabric, and a tailored fit built for matchday and beyond.
             </p>
             <ul className="text-sm text-white/70 space-y-1.5 pt-2">
-              <li className="flex gap-2"><span className="text-lime-400">▸</span> 100% recycled polyester</li>
+              <li className="flex gap-2"><span className="text-lime-400">▸</span> Premium polyester blend</li>
               <li className="flex gap-2"><span className="text-lime-400">▸</span> Embroidered club crest</li>
               <li className="flex gap-2"><span className="text-lime-400">▸</span> Heat-applied sponsor</li>
               <li className="flex gap-2"><span className="text-lime-400">▸</span> Machine wash cold</li>
@@ -2808,9 +2857,9 @@ const ProductPage = () => {
           {/* Shipping */}
           <div className="mt-8 border border-white/10 divide-y divide-white/10">
             {[
-              { icon: Truck, title: 'Shipping', text: 'free standard shipping on orders over $99. Express 2-day available.' },
+              { icon: Truck, title: 'Shipping', text: 'Free standard shipping on orders over $99. 7-12 business days delivery.' },
               { icon: RotateCcw, title: 'Returns', text: '30-day free returns. Customized items final sale.' },
-              { icon: Shield, title: 'Authenticity', text: 'Every jersey verified. Hologram tag included.' },
+              { icon: Shield, title: 'Quality', text: 'Premium stitching and fabric. Quality-checked before shipping.' },
             ].map(item => (
               <details key={item.title} className="group">
                 <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5">
@@ -3793,7 +3842,7 @@ const OrderTrackingPage = () => {
             </div>
 
             <div className="border-t border-white/10 pt-6 text-sm text-white/60">
-              <div className="mb-2"><span className="text-white/40">Carrier:</span> <span className="text-white">DHL Express</span></div>
+              <div className="mb-2"><span className="text-white/40">Carrier:</span> <span className="text-white">DHL</span></div>
               <div><span className="text-white/40">Tracking #:</span> <span className="text-white">JD0014592384</span></div>
             </div>
           </div>
@@ -3837,7 +3886,7 @@ const AboutPage = () => (
     <section className="py-20 max-w-3xl mx-auto px-4 md:px-8 text-white/70 leading-relaxed space-y-6">
       <h2 className="text-3xl font-black uppercase text-white">Our story</h2>
       <p>Started in 2024 out of a Toronto bedroom with a single goal: make it easy for fans anywhere in the world to wear the kit of the club they love, with the player name and number they want, without compromise on quality.</p>
-      <p>Every jersey is sourced from the same factories that supply the official leagues, then quality-checked individually before it leaves our warehouse. Player editions, fan editions, retro classics — if it matters to the football world, we carry it.</p>
+      <p>Every jersey is hand-picked for AAA+ quality stitching and breathable fabric, then quality-checked individually before it leaves our warehouse. Match kits, retro classics, training gear — if it matters to the football world, we carry it.</p>
       <p>We work directly with manufacturers to cut out middlemen and pass the savings to you. We don't do fast fashion. We do football. Forever.</p>
     </section>
   </div>
@@ -3984,7 +4033,7 @@ const Footer = () => {
             <div className="text-xs uppercase tracking-[0.3em] text-white/40 mt-2">For the love of the game · Est 2025</div>
             <p className="text-white/50 mt-5 text-sm leading-relaxed max-w-sm">
               Premium football jerseys shipped to 120+ countries.
-              Authentic kits, fan editions, and retro classics.
+              Match kits, training gear, and retro classics.
             </p>
             <div className="mt-5 flex gap-2">
               {[Globe, Globe, Globe, Globe].map((I, i) => (
@@ -4055,7 +4104,7 @@ const Footer = () => {
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-white/40 pt-6 border-t border-white/5">
-          <div>© 2025 MehdiSports Inc. All rights reserved. Not affiliated with any official league.</div>
+          <div>© 2026 MehdiSports. All rights reserved.</div>
           <div className="flex gap-4">
             <button onClick={() => navigate('terms')} className="hover:text-white">Terms</button>
             <button onClick={() => navigate('privacy')} className="hover:text-white">Privacy</button>
