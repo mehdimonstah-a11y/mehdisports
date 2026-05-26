@@ -2612,47 +2612,61 @@ const ProductPage = () => {
       </div>
 
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 mt-6 grid lg:grid-cols-2 gap-8 lg:gap-16">
-        {/* Image gallery */}
+        {/* Image — single, large, premium presentation */}
         <div className="lg:sticky lg:top-28 lg:self-start">
           <div className="bg-zinc-950 aspect-square relative overflow-hidden rounded-sm group">
+            {/* Sale badge */}
             {product.salePrice && (
               <div className="absolute top-4 left-4 bg-red-500 text-white text-xs font-bold px-3 py-1 uppercase z-10">
                 Sale
               </div>
             )}
-            <button onClick={() => setZoom(true)} className="absolute top-4 right-4 z-10 bg-white/10 hover:bg-lime-400 hover:text-black backdrop-blur p-2 text-white rounded-full transition-colors">
+            {/* New / Best Seller badge */}
+            {!product.salePrice && product.isNew && (
+              <div className="absolute top-4 left-4 bg-lime-400 text-black text-xs font-bold px-3 py-1 uppercase z-10">
+                New
+              </div>
+            )}
+            {!product.salePrice && !product.isNew && product.isBest && (
+              <div className="absolute top-4 left-4 bg-white text-black text-xs font-bold px-3 py-1 uppercase z-10">
+                Best Seller
+              </div>
+            )}
+
+            {/* Zoom button */}
+            <button onClick={() => setZoom(true)} className="absolute top-4 right-4 z-10 bg-white/10 hover:bg-lime-400 hover:text-black backdrop-blur p-2 text-white rounded-full transition-colors" aria-label="Zoom image">
               <ZoomIn className="w-4 h-4" />
             </button>
-            <AnimatePresence mode="wait">
-              <motion.div key={view}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full h-full flex items-center justify-center p-8">
-                <JerseySVG club={product.club} view={view}
-                  playerName={playerName ? playerName.toUpperCase().slice(0, 12) : null}
-                  playerNumber={playerNumber || null}
+
+            {/* Subtle radial glow background */}
+            <div className="absolute inset-0 bg-gradient-radial from-white/[0.04] via-transparent to-transparent pointer-events-none" />
+
+            {/* The single product image — large, centered, premium */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full h-full flex items-center justify-center p-6 md:p-10"
+            >
+              {product.image ? (
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full object-contain drop-shadow-[0_25px_80px_rgba(0,0,0,0.6)] group-hover:scale-[1.03] transition-transform duration-700"
+                  onError={(e) => {
+                    // If real image fails, swap to SVG fallback
+                    e.target.outerHTML = `<div class="w-full h-full flex items-center justify-center text-white/30 text-sm">Image unavailable</div>`;
+                  }}
+                />
+              ) : (
+                <JerseySVG club={product.club} view="front"
                   className="w-full max-w-md drop-shadow-[0_25px_80px_rgba(190,242,100,0.15)]" />
-              </motion.div>
-            </AnimatePresence>
+              )}
+            </motion.div>
           </div>
-          <div className="grid grid-cols-4 gap-2 md:gap-3 mt-3">
-            {['front', 'back'].map(v => (
-              <button key={v} onClick={() => setView(v)}
-                className={`aspect-square bg-zinc-950 border-2 ${view === v ? 'border-lime-400' : 'border-transparent'} hover:border-white/30 p-2 transition-colors`}>
-                <JerseySVG club={product.club} view={v}
-                  playerName={playerName ? playerName.toUpperCase().slice(0, 8) : null}
-                  playerNumber={playerNumber || null}
-                  className="w-full h-full" />
-              </button>
-            ))}
-            <div className="aspect-square bg-zinc-950 flex items-center justify-center text-white/30 text-xs uppercase tracking-widest border border-white/5">
-              Detail
-            </div>
-            <div className="aspect-square bg-zinc-950 flex items-center justify-center text-white/30 text-xs uppercase tracking-widest border border-white/5">
-              Fabric
-            </div>
-          </div>
+
+          {/* Single inventory image — no fake thumbnails */}
+          {/* If multi-image support is added later, thumbnails go here */}
         </div>
 
         {/* Product info */}
@@ -2841,17 +2855,54 @@ const ProductPage = () => {
           </div>
 
           {/* Description */}
-          <div className="mt-8 space-y-4">
+          <div className="mt-8 space-y-5">
             <h2 className="text-xs uppercase tracking-[0.2em] text-white/60">Description</h2>
             <p className="text-white/70 leading-relaxed">
-              The {product.season} {product.clubName} {(product.kit || '').toLowerCase()} kit. Premium AAA+ quality stitching, breathable fabric, and a tailored fit built for matchday and beyond.
+              {product.isRetro
+                ? `Iconic ${product.season} ${product.clubName} kit, faithfully recreated with premium fabric and era-accurate styling. A tribute to one of football's defining moments — built to be worn, not just collected.`
+                : product.isTraining
+                ? `The ${product.season} ${product.clubName} training top. Designed for active wear with breathable sweat-wicking fabric and an athletic fit that moves with you.`
+                : product.isTracksuit
+                ? `The ${product.season} ${product.clubName} tracksuit. Premium polyester construction with a tailored athletic cut — equally at home on the training pitch or off-duty.`
+                : product.isShorts
+                ? `Matching ${product.season} ${product.clubName} shorts. Lightweight, breathable, and built for full range of motion.`
+                : `The ${product.season} ${product.clubName} ${(product.kit || 'home').toLowerCase()} kit. Premium quality stitching, breathable lightweight fabric, and a tailored athletic fit built for matchday and beyond.`}
             </p>
-            <ul className="text-sm text-white/70 space-y-1.5 pt-2">
-              <li className="flex gap-2"><span className="text-lime-400">▸</span> Premium polyester blend</li>
-              <li className="flex gap-2"><span className="text-lime-400">▸</span> Embroidered club crest</li>
-              <li className="flex gap-2"><span className="text-lime-400">▸</span> Heat-applied sponsor</li>
-              <li className="flex gap-2"><span className="text-lime-400">▸</span> Machine wash cold</li>
-            </ul>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 pt-2">
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-white/40 mb-2">Fabric</div>
+                <ul className="text-sm text-white/70 space-y-1.5">
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> Lightweight polyester blend</li>
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> Sweat-wicking technology</li>
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> Breathable mesh panels</li>
+                </ul>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-white/40 mb-2">Construction</div>
+                <ul className="text-sm text-white/70 space-y-1.5">
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> {product.isRetro ? 'Vintage-styled crest' : 'Embroidered club crest'}</li>
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> Heat-pressed sponsor</li>
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> Reinforced stitching</li>
+                </ul>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-white/40 mb-2">Fit</div>
+                <ul className="text-sm text-white/70 space-y-1.5">
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> Athletic match-day cut</li>
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> True to size</li>
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> Training & casual wear</li>
+                </ul>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-white/40 mb-2">Care</div>
+                <ul className="text-sm text-white/70 space-y-1.5">
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> Machine wash cold</li>
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> Do not bleach</li>
+                  <li className="flex gap-2"><span className="text-lime-400 mt-1">▸</span> Tumble dry low</li>
+                </ul>
+              </div>
+            </div>
           </div>
 
           {/* Shipping */}
@@ -2906,16 +2957,22 @@ const ProductPage = () => {
         </div>
       </div>
 
-      {/* Zoom modal */}
+      {/* Zoom modal — uses the real product image */}
       <AnimatePresence>
         {zoom && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-8" onClick={() => setZoom(false)}>
-            <button className="absolute top-6 right-6 text-white"><X className="w-6 h-6" /></button>
-            <JerseySVG club={product.club} view={view}
-              playerName={playerName ? playerName.toUpperCase() : null}
-              playerNumber={playerNumber || null}
-              className="max-w-full max-h-full" />
+            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 md:p-8" onClick={() => setZoom(false)}>
+            <button className="absolute top-6 right-6 text-white hover:text-lime-400 z-10" aria-label="Close zoom"><X className="w-6 h-6" /></button>
+            {product.image ? (
+              <img
+                src={product.image}
+                alt={product.name}
+                className="max-w-full max-h-full object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <JerseySVG club={product.club} view="front" className="max-w-full max-h-full" />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
