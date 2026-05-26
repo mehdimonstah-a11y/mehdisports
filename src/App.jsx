@@ -1386,8 +1386,8 @@ const Hero = () => {
             Built for you.
           </h1>
           <p className="mt-6 text-white/60 text-sm md:text-base lg:text-lg max-w-md leading-relaxed">
-            Premium quality player editions, fan kits and retro classics from every league that matters.
-            Custom name & number on every jersey.
+            Match kits, retro classics, training gear — every team that matters.
+            Custom name & number on any jersey, shipped worldwide.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <button onClick={() => navigate('shop', { filter: { isNew: true } })}
@@ -1841,39 +1841,33 @@ const RetroSection = () => {
 };
 
 const Testimonials = () => {
-  const reviews = [
-    { name: 'Karim B.', text: "Quality is unreal. The player edition feels exactly like what's on the pitch. Already ordered three more.", rating: 5, city: 'Toronto' },
-    { name: 'Sofia R.', text: "The retro Brazil kit is fire. Stitching, sponsor patches, everything looks vintage but feels brand new.", rating: 5, city: 'Madrid' },
-    { name: 'James O.', text: "Shipped to London in 4 days. Custom name printed perfectly. Best jersey shop I've used by a mile.", rating: 5, city: 'London' },
-    { name: 'Yusuf A.', text: "Customer service helped me size up after my first order. Free exchange, no hassle. Earned a customer for life.", rating: 5, city: 'Dubai' },
+  const pillars = [
+    { icon: Truck, title: 'Worldwide shipping', text: 'Free over $99. Tracked from Mississauga to your door.' },
+    { icon: Shield, title: 'Quality you can feel', text: 'Premium polyester, embroidered crests, heat-pressed sponsors.' },
+    { icon: RotateCcw, title: '30-day returns', text: 'Not the right fit? Send it back. No questions asked.' },
+    { icon: Award, title: 'Built for fans', text: 'Run by a football fan, for football fans. WhatsApp us anytime.' },
   ];
   return (
-    <section className="bg-black py-16 md:py-24">
+    <section className="bg-black py-16 md:py-24 border-t border-white/5">
       <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="text-center mb-12">
-          <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2">5-star rated</div>
-          <h2 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tight">Worn worldwide</h2>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-5 h-5 fill-lime-400 text-lime-400" />)}
-            <span className="text-white/60 text-sm ml-2">4.9 / 5 from 12,400+ reviews</span>
-          </div>
+          <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2">Why MehdiSports</div>
+          <h2 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tight">No bullshit promises</h2>
+          <p className="text-white/50 text-sm mt-3 max-w-md mx-auto">
+            We're not a faceless drop-shipper. Real founder, real shipping, real returns.
+          </p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {reviews.map((r, i) => (
-            <motion.div key={r.name}
+          {pillars.map((p, i) => (
+            <motion.div key={p.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-zinc-950 border border-white/5 p-6 hover:border-lime-400/30 transition-colors">
-              <div className="flex gap-1 mb-3">
-                {Array(r.rating).fill(0).map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-lime-400 text-lime-400" />)}
-              </div>
-              <p className="text-white/80 text-sm leading-relaxed">"{r.text}"</p>
-              <div className="mt-5 pt-5 border-t border-white/5">
-                <div className="text-white font-semibold text-sm">{r.name}</div>
-                <div className="text-white/40 text-xs">{r.city} · Verified Buyer</div>
-              </div>
+              transition={{ delay: i * 0.08 }}
+              className="bg-zinc-950 border border-white/5 p-6 hover:border-white/15 transition-colors">
+              <p.icon className="w-6 h-6 text-lime-400 mb-4" />
+              <div className="text-white font-bold text-base">{p.title}</div>
+              <p className="mt-2 text-white/60 text-sm leading-relaxed">{p.text}</p>
             </motion.div>
           ))}
         </div>
@@ -1949,16 +1943,13 @@ const HomePage = () => (
   <>
     <Hero />
     <TrustBar />
-    <TrendingClubs />
     <NewArrivals />
-    <PromoBanner />
+    <TrendingClubs />
     <WorldCup2026 />
-    <ShopByLeague />
+    <PromoBanner />
     <FeaturedPlayers />
-    <BestSellers />
     <RetroSection />
     <Testimonials />
-    
     <Newsletter />
   </>
 );
@@ -2083,10 +2074,10 @@ const TrustBar = () => (
     <div className="max-w-[1600px] mx-auto px-4 md:px-8">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
         {[
-          { icon: Truck, title: 'Free Shipping', sub: 'On orders over $99' },
-          { icon: Award, title: 'Premium Quality', sub: 'Top-tier AAA+ stitching' },
-          { icon: RotateCcw, title: 'Easy Returns', sub: '30-day money-back' },
-          { icon: Lock, title: 'Secure Checkout', sub: 'Interac & crypto' },
+          { icon: Truck, title: 'Free Shipping', sub: 'Worldwide on $99+' },
+          { icon: Sparkles, title: 'Custom Print', sub: 'Name & number · +$10' },
+          { icon: RotateCcw, title: '30-Day Returns', sub: 'No questions asked' },
+          { icon: Lock, title: 'WhatsApp Support', sub: 'Real human, real fast' },
         ].map((b, i) => (
           <motion.div
             key={b.title}
@@ -2255,15 +2246,28 @@ const ShopPage = () => {
     return result;
   }, [filters, sort, catalogLoaded]);
 
+  // Pre-compute counts per league + club for filter labels (so users see "Premier League (412)")
+  const leagueCounts = useMemo(() => {
+    const m = {};
+    PRODUCTS.forEach(p => { m[p.league] = (m[p.league] || 0) + 1; });
+    return m;
+  }, [catalogLoaded]);
+  const clubCounts = useMemo(() => {
+    const m = {};
+    PRODUCTS.forEach(p => { m[p.clubName] = (m[p.clubName] || 0) + 1; });
+    return m;
+  }, [catalogLoaded]);
+
   const FilterPanel = () => (
     <div className="space-y-6">
       <div>
         <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">League</div>
         <div className="space-y-2">
-          {['', ...new Set(PRODUCTS.map(p => p.league))].map(l => (
+          {['', ...Array.from(new Set(PRODUCTS.map(p => p.league))).sort()].map(l => (
             <button key={l || 'all'} onClick={() => setFilters(f => ({ ...f, league: l }))}
-              className={`block w-full text-left text-sm py-1 ${filters.league === l ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
-              {l || 'All Leagues'}
+              className={`flex justify-between items-center w-full text-left text-sm py-1 ${filters.league === l ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
+              <span>{l || 'All Leagues'}</span>
+              {l && <span className="text-white/30 text-xs">{leagueCounts[l] || 0}</span>}
             </button>
           ))}
         </div>
@@ -2310,8 +2314,9 @@ const ShopPage = () => {
         <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
           {['', ...Array.from(new Set(PRODUCTS.map(p => p.clubName))).filter(Boolean).sort()].map(c => (
             <button key={c || 'all'} onClick={() => setFilters(f => ({ ...f, clubName: c }))}
-              className={`block w-full text-left text-sm py-1 ${filters.clubName === c ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
-              {c || 'All Clubs'}
+              className={`flex justify-between items-center w-full text-left text-sm py-1 ${filters.clubName === c ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
+              <span className="truncate">{c || 'All Clubs'}</span>
+              {c && <span className="text-white/30 text-xs flex-shrink-0 ml-2">{clubCounts[c] || 0}</span>}
             </button>
           ))}
         </div>
@@ -2681,13 +2686,9 @@ const ProductPage = () => {
             {product.name}
           </h1>
 
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex gap-0.5">
-              {[1, 2, 3, 4, 5].map(i => (
-                <Star key={i} className={`w-4 h-4 ${i <= Math.round(product.rating) ? 'fill-lime-400 text-lime-400' : 'text-white/20'}`} />
-              ))}
-            </div>
-            <span className="text-white/60 text-sm">{product.rating.toFixed(1)} · {product.reviews} reviews</span>
+          <div className="mt-4 flex items-center gap-3 text-white/40 text-sm">
+            <Star className="w-4 h-4" />
+            <span>Be the first to review</span>
           </div>
 
           <div className="mt-6 flex items-baseline gap-3">
@@ -2718,26 +2719,7 @@ const ProductPage = () => {
               )}
             </div>
 
-            {/* Live viewer count */}
-            <div className="flex items-center gap-2 text-xs text-white/60">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-              <motion.span
-                key={viewerCount}
-                initial={{ opacity: 0.4 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                <span className="text-white font-semibold">{viewerCount}</span> people viewing this right now
-              </motion.span>
-            </div>
-
-            {/* Recent sales social proof */}
-            <div className="flex items-center gap-2 text-xs text-white/60">
-              <Flame className="w-3.5 h-3.5 text-orange-400" />
-              <span><span className="text-white font-semibold">{recentSales}</span> sold in the last 24 hours</span>
-            </div>
-
-            {/* Low stock warning if applicable */}
+            {/* Low stock warning — only shown when stock is actually low */}
             {product.stock > 0 && product.stock < 10 && (
               <div className="flex items-center gap-2 text-xs text-orange-400 bg-orange-400/5 border border-orange-400/20 px-3 py-2 mt-3">
                 <span className="text-base">⚠️</span>
@@ -2793,6 +2775,20 @@ const ProductPage = () => {
                 <div className="text-xs uppercase tracking-[0.2em] text-white">Custom Print</div>
                 <span className="text-xs text-lime-400 font-bold">+$10</span>
               </div>
+
+              {/* Live preview — shows how name + number will look on the back */}
+              {(playerName || playerNumber) && (
+                <div className="mb-4 bg-zinc-950 border border-white/10 px-4 py-5 flex flex-col items-center">
+                  <div className="text-[9px] uppercase tracking-[0.3em] text-white/40 mb-2">Preview</div>
+                  <div className="font-black uppercase text-white tracking-[0.15em] text-base md:text-lg">
+                    {playerName ? playerName.toUpperCase() : '—'}
+                  </div>
+                  <div className="font-black text-white text-5xl md:text-6xl leading-none mt-1">
+                    {playerNumber || '##'}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-3 gap-2">
                 <input value={playerName} onChange={e => setPlayerName(e.target.value)}
                   maxLength={12}
@@ -3080,6 +3076,16 @@ const CartDrawer = () => {
                       <div className="h-full bg-lime-400 transition-all" style={{ width: `${Math.min(100, (subtotal / 99) * 100)}%` }} />
                     </div>
                   </div>
+
+                  {/* Buy 2 Get 1 Free callout — shown when cart has 1 or 2 items */}
+                  {cart.length > 0 && cart.length < 3 && (
+                    <div className="bg-lime-400/10 border-y border-lime-400/30 p-4 text-center">
+                      <div className="text-lime-400 text-xs uppercase tracking-[0.2em] font-bold">
+                        {cart.length === 1 ? 'Add 2 more · Get 1 Free' : 'Add 1 more · Get the cheapest free'}
+                      </div>
+                      <div className="text-white/60 text-[11px] mt-1">Use code <span className="text-white font-bold">B2G1</span> at checkout</div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-white/10 p-5 space-y-4">
@@ -3871,37 +3877,21 @@ const OrderTrackingPage = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-zinc-950 border border-white/5 p-6 md:p-8">
-            <div className="flex justify-between items-start flex-wrap gap-3 mb-8">
-              <div>
-                <div className="text-xs uppercase tracking-widest text-white/40">Order</div>
-                <div className="text-xl font-black text-lime-400">{orderNum || 'MS847291'}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs uppercase tracking-widest text-white/40">Status</div>
-                <div className="text-lime-400 font-bold">Out for Delivery</div>
-              </div>
+          <div className="bg-zinc-950 border border-white/5 p-8 text-center">
+            <div className="w-12 h-12 mx-auto bg-lime-400/10 border border-lime-400/30 rounded-full flex items-center justify-center mb-4">
+              <Mail className="w-5 h-5 text-lime-400" />
             </div>
-
-            <div className="space-y-1 mb-8">
-              {steps.map((s, i) => (
-                <div key={i} className="flex gap-4 items-start">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-4 h-4 rounded-full ${s.done ? 'bg-lime-400' : s.current ? 'bg-lime-400 animate-pulse' : 'bg-white/20'}`} />
-                    {i < steps.length - 1 && <div className={`w-px h-12 ${s.done ? 'bg-lime-400' : 'bg-white/10'}`} />}
-                  </div>
-                  <div className="flex-1 pb-6">
-                    <div className={`font-bold ${s.done || s.current ? 'text-white' : 'text-white/40'}`}>{s.label}</div>
-                    <div className="text-xs text-white/40">{s.date}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-white/10 pt-6 text-sm text-white/60">
-              <div className="mb-2"><span className="text-white/40">Carrier:</span> <span className="text-white">DHL</span></div>
-              <div><span className="text-white/40">Tracking #:</span> <span className="text-white">JD0014592384</span></div>
-            </div>
+            <div className="text-xl font-bold text-white mb-2">We're on it</div>
+            <p className="text-white/60 text-sm leading-relaxed max-w-md mx-auto">
+              We'll look up order <span className="text-lime-400 font-bold">{orderNum}</span> and send a status update to your email within 1 hour during business hours.
+            </p>
+            <p className="text-white/40 text-xs mt-4">
+              Need it faster? WhatsApp us at <a href="https://wa.me/14372595733" className="text-lime-400 hover:text-white">+1 (437) 259-5733</a>
+            </p>
+            <button onClick={() => { setTracked(false); setOrderNum(''); }}
+              className="mt-6 px-6 py-2.5 border border-white/10 hover:border-white/30 text-white text-xs uppercase tracking-widest">
+              Track Another
+            </button>
           </div>
         )}
       </div>
@@ -3920,18 +3910,18 @@ const AboutPage = () => (
           For the love<br />of the <span className="italic font-serif font-normal text-lime-400">game</span>.
         </h1>
         <p className="mt-8 text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">
-          MehdiSports was built by football obsessives, for football obsessives. We bring the world's most iconic jerseys
-          — past, present and limited — directly to fans, without the bloated retail markup or sketchy knock-off corners
-          of the internet.
+          MehdiSports is a small operation run by one football obsessive out of Mississauga, Ontario.
+          The mission: bring quality jerseys to fans worldwide without the retail markup
+          — every league that matters, every era worth wearing.
         </p>
       </div>
     </section>
     <section className="py-16 md:py-20 border-y border-white/5 bg-zinc-950">
       <div className="max-w-6xl mx-auto px-4 md:px-8 grid md:grid-cols-3 gap-8">
         {[
-          { num: '50K+', label: 'Jerseys shipped' },
-          { num: '120', label: 'Countries served' },
-          { num: '4.9★', label: 'Average rating' },
+          { num: '2,700+', label: 'Jerseys in stock' },
+          { num: '120+', label: 'Countries we ship to' },
+          { num: '30-Day', label: 'No-questions returns' },
         ].map(s => (
           <div key={s.label} className="text-center">
             <div className="text-5xl md:text-6xl font-black text-lime-400 tracking-tighter">{s.num}</div>
@@ -3942,9 +3932,9 @@ const AboutPage = () => (
     </section>
     <section className="py-20 max-w-3xl mx-auto px-4 md:px-8 text-white/70 leading-relaxed space-y-6">
       <h2 className="text-3xl font-black uppercase text-white">Our story</h2>
-      <p>Started in 2024 out of a Toronto bedroom with a single goal: make it easy for fans anywhere in the world to wear the kit of the club they love, with the player name and number they want, without compromise on quality.</p>
-      <p>Every jersey is hand-picked for AAA+ quality stitching and breathable fabric, then quality-checked individually before it leaves our warehouse. Match kits, retro classics, training gear — if it matters to the football world, we carry it.</p>
-      <p>We work directly with manufacturers to cut out middlemen and pass the savings to you. We don't do fast fashion. We do football. Forever.</p>
+      <p>Started in 2024 out of a Mississauga bedroom with a single goal: make it easy for fans anywhere in the world to wear the kit of the club they love, with the player name and number they want, without compromise on quality.</p>
+      <p>Every jersey is hand-picked for AAA+ quality stitching and breathable fabric, then quality-checked individually before it leaves the warehouse. Match kits, retro classics, training gear — if it matters to the football world, we carry it.</p>
+      <p>We're not a faceless dropshipper. Real person, real address, real WhatsApp number. If something's wrong, you get a real reply — usually within an hour.</p>
     </section>
   </div>
 );
@@ -3959,7 +3949,7 @@ const ContactPage = () => (
           {[
             { icon: Mail, label: 'Email', value: 'orders@mehdisports.com' },
             { icon: Phone, label: 'WhatsApp', value: '+1 (437) 259-5733' },
-            { icon: MapPin, label: 'HQ', value: 'Toronto, ON · Canada' },
+            { icon: MapPin, label: 'HQ', value: 'Mississauga, ON · Canada' },
             { icon: Globe, label: 'Hours', value: 'Mon–Fri · 9am–6pm ET' },
           ].map(c => (
             <div key={c.label} className="flex gap-4">
@@ -4092,12 +4082,19 @@ const Footer = () => {
               Premium football jerseys shipped to 120+ countries.
               Match kits, training gear, and retro classics.
             </p>
-            <div className="mt-5 flex gap-2">
-              {[Globe, Globe, Globe, Globe].map((I, i) => (
-                <a key={i} className="w-9 h-9 border border-white/10 hover:border-lime-400 hover:text-lime-400 hover:bg-lime-400/5 flex items-center justify-center text-white/70 transition-colors cursor-pointer">
-                  <I className="w-4 h-4" />
-                </a>
-              ))}
+            <div className="mt-6 space-y-2 text-sm">
+              <div className="flex items-start gap-2 text-white/60">
+                <MapPin className="w-4 h-4 mt-0.5 text-lime-400/80 flex-shrink-0" />
+                <span>Mississauga, ON · Canada</span>
+              </div>
+              <div className="flex items-start gap-2 text-white/60">
+                <Mail className="w-4 h-4 mt-0.5 text-lime-400/80 flex-shrink-0" />
+                <a href="mailto:orders@mehdisports.com" className="hover:text-white">orders@mehdisports.com</a>
+              </div>
+              <div className="flex items-start gap-2 text-white/60">
+                <Phone className="w-4 h-4 mt-0.5 text-lime-400/80 flex-shrink-0" />
+                <a href="https://wa.me/14372595733" className="hover:text-white">WhatsApp · +1 (437) 259-5733</a>
+              </div>
             </div>
           </div>
 

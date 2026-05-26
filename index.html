@@ -1,14 +1,71 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MehdiSports</title>
-    <style>
-      *, *::before, *::after { box-sizing: border-box; }
-      html, body, #root { width: 100%; min-height: 100%; margin: 0; padding: 0; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="theme-color" content="#000000" />
+
+    <!-- Primary -->
+    <title>MehdiSports — Premium Football Jerseys, Shipped Worldwide</title>
+    <meta name="description" content="Match kits, retro classics & training gear from every league that matters. Custom name & number on any jersey. Shipped from Mississauga to 120+ countries. Free shipping over $99." />
+    <meta name="keywords" content="football jersey, soccer jersey, real madrid jersey, barcelona jersey, premier league jersey, retro football shirts, world cup 2026 jerseys, custom soccer jersey, kids football jersey, canada football jersey shop" />
+
+    <!-- Open Graph (Facebook, WhatsApp, iMessage) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.mehdisports.com/" />
+    <meta property="og:title" content="MehdiSports — Premium Football Jerseys" />
+    <meta property="og:description" content="Match kits, retro classics & training gear. Custom name & number on any jersey. Free worldwide shipping over $99." />
+    <meta property="og:image" content="https://www.mehdisports.com/hero-legends.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="MehdiSports" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MehdiSports — Premium Football Jerseys" />
+    <meta name="twitter:description" content="Match kits, retro classics & training gear. Custom name & number on any jersey." />
+    <meta name="twitter:image" content="https://www.mehdisports.com/hero-legends.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000'/%3E%3Ctext x='50' y='66' font-family='Arial Black,sans-serif' font-size='60' font-weight='900' text-anchor='middle' fill='%23bef264'%3EM%3C/text%3E%3C/svg%3E" />
+
+    <!-- Preconnect to R2 CDN so images load faster -->
+    <link rel="preconnect" href="https://pub-48307add76af4753858d4750dc1ecf55.r2.dev" crossorigin />
+    <link rel="dns-prefetch" href="https://pub-48307add76af4753858d4750dc1ecf55.r2.dev" />
+
+    <!-- Preload the catalog so it starts fetching immediately on page load -->
+    <link rel="preload" as="fetch" href="/products.json" crossorigin />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+
+    <!-- Schema.org structured data — helps Google understand this is an ecommerce store -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "OnlineStore",
+      "name": "MehdiSports",
+      "url": "https://www.mehdisports.com",
+      "logo": "https://www.mehdisports.com/hero-legends.png",
+      "description": "Premium football jerseys from every league that matters. Custom name & number, shipped worldwide.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Mississauga",
+        "addressRegion": "ON",
+        "addressCountry": "CA"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+1-437-259-5733",
+        "contactType": "customer service",
+        "email": "orders@mehdisports.com",
+        "areaServed": "Worldwide"
+      },
+      "sameAs": []
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
