@@ -1058,7 +1058,6 @@ const Header = () => {
     { label: 'National Teams', page: 'shop', params: { filter: { league: 'International' } } },
     { label: 'Kids', page: 'shop', params: { filter: { kidsOnly: true } } },
     { label: 'Retro', page: 'shop', params: { filter: { type: 'Retro' } } },
-    { label: 'Sale', page: 'shop', params: { filter: { onSale: true } } },
   ];
 
   return (
@@ -1129,7 +1128,6 @@ const MobileMenu = () => {
     { label: 'Kids Jerseys', page: 'shop', params: { filter: { kidsOnly: true } } },
     { label: 'Retro Jerseys', page: 'shop', params: { filter: { type: 'Retro' } } },
     { label: 'Training Kits', page: 'shop', params: { filter: { type: 'Training Kit' } } },
-    { label: 'Sale', page: 'shop', params: { filter: { onSale: true } } },
   ];
   return (
     <AnimatePresence>
@@ -1867,7 +1865,7 @@ const Testimonials = () => {
       <div className="max-w-[1600px] mx-auto px-4 md:px-8">
         <div className="text-center mb-12">
           <div className="text-lime-400 text-xs uppercase tracking-[0.4em] mb-2">Why MehdiSports</div>
-          <h2 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tight">No bullshit promises</h2>
+          <h2 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tight">No BS promises</h2>
           <p className="text-white/50 text-sm mt-3 max-w-md mx-auto">
             We're not a faceless drop-shipper. Real founder, real shipping, real returns.
           </p>
@@ -2350,7 +2348,6 @@ const ShopPage = () => {
 
       <div className="border-t border-white/5 pt-6 space-y-3">
         {[
-          { key: 'onSale', label: 'On Sale' },
           { key: 'isNew', label: 'New Arrivals' },
           { key: 'isBest', label: 'Best Sellers' },
         ].map(opt => (
@@ -2366,10 +2363,7 @@ const ShopPage = () => {
         ))}
       </div>
 
-      <button onClick={() => setFilters({
-        league: '', type: '', version: '', clubName: '', size: '', priceMax: 200,
-        onSale: false, isNew: false, isBest: false
-      })}
+      <button onClick={() => setFilters(buildFilterState({}))}
         className="w-full border border-white/10 text-white/70 hover:text-white hover:border-white/30 py-3 text-xs uppercase tracking-widest">
         Reset Filters
       </button>
@@ -2421,12 +2415,6 @@ const ShopPage = () => {
             <>
               <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-2">Most loved worldwide</div>
               <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Best Sellers</h1>
-              <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
-            </>
-          ) : filters.onSale ? (
-            <>
-              <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-2">Limited time</div>
-              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Sale</h1>
               <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
             </>
           ) : (
@@ -4181,11 +4169,11 @@ const Footer = () => {
           <div className="md:col-span-2">
             <div className="text-xs uppercase tracking-widest text-white font-bold mb-4">Shop</div>
             <ul className="space-y-2.5 text-sm text-white/60">
+              <li><button onClick={() => navigate('shop', { filter: { wc2026: true } })} className="hover:text-lime-400">World Cup 2026</button></li>
               <li><button onClick={() => navigate('shop', { filter: { isNew: true } })} className="hover:text-lime-400">New Arrivals</button></li>
               <li><button onClick={() => navigate('shop', { filter: { isBest: true } })} className="hover:text-lime-400">Best Sellers</button></li>
               <li><button onClick={() => navigate('shop', { filter: { type: 'Retro' } })} className="hover:text-lime-400">Retro</button></li>
               <li><button onClick={() => navigate('shop', { filter: { league: 'International' } })} className="hover:text-lime-400">National Teams</button></li>
-              <li><button onClick={() => navigate('shop', { filter: { onSale: true } })} className="hover:text-lime-400">Sale</button></li>
             </ul>
           </div>
 
