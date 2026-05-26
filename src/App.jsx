@@ -675,7 +675,7 @@ const decompressProduct = (c) => {
     // Available variants for this product (Fan Version / Player Version / Kids)
     variants: c.var || ['Fan Version'],
     price: c.p,
-    salePrice: null,
+    salePrice: c.sp || null,
     stock: c.st,
     rating: c.r,
     reviews: c.rv,
@@ -874,6 +874,9 @@ const JerseySVG = ({ club, playerName, playerNumber, view = 'front', className =
         src={imageUrl}
         alt=""
         loading="lazy"
+        decoding="async"
+        width="400"
+        height="480"
         className={`${className} object-contain`}
         style={{ width: '100%', height: '100%' }}
         onError={(e) => {
@@ -1223,7 +1226,19 @@ const SearchOverlay = () => {
             {q && (
               <div className="mt-6 space-y-2 max-h-[60vh] overflow-y-auto">
                 {results.length === 0 ? (
-                  <div className="text-white/40 py-8 text-center">No results for "{q}"</div>
+                  <div className="py-10 text-center">
+                    <Search className="w-10 h-10 text-white/20 mx-auto mb-3" />
+                    <div className="text-white font-bold mb-2">No matches for "{q}"</div>
+                    <div className="text-white/50 text-sm mb-5">Try a club name, player, or season</div>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {suggestions.slice(0, 5).map(s => (
+                        <button key={s} onClick={() => setQ(s)}
+                          className="px-3 py-1.5 text-xs bg-white/5 hover:bg-lime-400 hover:text-black text-white/70 rounded-full transition-colors">
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ) : results.map(p => (
                   <button key={p.id}
                     onClick={() => { navigate('product', { productId: p.id }); setSearchOpen(false); setQ(''); }}
@@ -1233,9 +1248,9 @@ const SearchOverlay = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-white font-medium truncate group-hover:text-lime-400">{p.name}</div>
-                      <div className="text-xs text-white/40">{p.league} · {p.version}</div>
+                      <div className="text-xs text-white/40">{p.league}{p.season ? ` · ${p.season}` : ''}</div>
                     </div>
-                    <div className="text-white font-bold">${(p.salePrice || p.price).toFixed(2)}</div>
+                    <div className="text-white font-bold whitespace-nowrap">${(p.salePrice || p.price).toFixed(2)}</div>
                   </button>
                 ))}
               </div>
@@ -1842,7 +1857,7 @@ const RetroSection = () => {
 
 const Testimonials = () => {
   const pillars = [
-    { icon: Truck, title: 'Worldwide shipping', text: 'Free over $99. Tracked from Mississauga to your door.' },
+    { icon: Truck, title: 'Worldwide shipping', text: 'Free over $99. Tracked from Toronto to your door.' },
     { icon: Shield, title: 'Quality you can feel', text: 'Premium polyester, embroidered crests, heat-pressed sponsors.' },
     { icon: RotateCcw, title: '30-day returns', text: 'Not the right fit? Send it back. No questions asked.' },
     { icon: Award, title: 'Built for fans', text: 'Run by a football fan, for football fans. WhatsApp us anytime.' },
@@ -1949,6 +1964,7 @@ const HomePage = () => (
     <PromoBanner />
     <FeaturedPlayers />
     <RetroSection />
+    <RecentlyViewedSection currentProductId={null} />
     <Testimonials />
     <Newsletter />
   </>
@@ -2453,14 +2469,30 @@ const ShopPage = () => {
             </div>
 
             {filtered.length === 0 ? (
-              <div className="text-center py-24">
-                <div className="text-white/40 text-lg mb-4">No products match your filters.</div>
-                <button onClick={() => setFilters({
-                  league: '', type: '', version: '', clubName: '', size: '', priceMax: 200,
-                  onSale: false, isNew: false, isBest: false
-                })} className="bg-lime-400 text-black px-6 py-3 text-sm font-bold uppercase">
-                  Clear All
+              <div className="text-center py-20 md:py-24 max-w-md mx-auto">
+                <Search className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                <div className="text-white text-xl font-black uppercase mb-2">No matches found</div>
+                <p className="text-white/50 text-sm mb-6">Try removing a filter or browsing our full collection below.</p>
+                <button onClick={() => setFilters(buildFilterState({}))}
+                  className="bg-lime-400 hover:bg-white text-black px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors mb-8">
+                  Clear All Filters
                 </button>
+                <div className="pt-6 border-t border-white/5">
+                  <div className="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-3">Or try one of these</div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {[
+                      { label: 'New 26/27', filter: { isNew: true } },
+                      { label: 'World Cup', filter: { wc2026: true } },
+                      { label: 'Retro Vault', filter: { type: 'Retro' } },
+                      { label: 'Best Sellers', filter: { isBest: true } },
+                    ].map(l => (
+                      <button key={l.label} onClick={() => navigate('shop', { filter: l.filter })}
+                        className="px-4 py-2 border border-white/10 text-xs text-white hover:border-lime-400 hover:text-lime-400 uppercase tracking-wide transition-colors">
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : (
               <>
@@ -2549,8 +2581,40 @@ const RecentlyViewedSection = ({ currentProductId }) => {
 
 // ---------- PRODUCT DETAIL PAGE ---------------------------------------------
 const ProductPage = () => {
-  const { route, addToCart, toggleWishlist, wishlist, navigate, trackView } = useStore();
-  const product = PRODUCTS.find(p => p.id === route.productId) || PRODUCTS[0];
+  const { route, addToCart, toggleWishlist, wishlist, navigate, trackView, catalogLoaded } = useStore();
+  const product = PRODUCTS.find(p => p.id === route.productId);
+
+  // While catalog is loading, show a skeleton
+  if (!catalogLoaded && !product) {
+    return (
+      <div className="bg-black min-h-screen flex items-center justify-center">
+        <div className="text-white/40 text-sm uppercase tracking-widest animate-pulse">Loading jersey...</div>
+      </div>
+    );
+  }
+
+  // Genuine 404 — product ID doesn't exist (e.g., bad bookmark)
+  if (!product) {
+    return (
+      <div className="bg-black min-h-screen flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="text-[8rem] md:text-[12rem] font-black leading-none text-lime-400 tracking-tighter">404</div>
+          <h1 className="text-3xl md:text-4xl font-black uppercase text-white tracking-tight mb-3">Jersey Not Found</h1>
+          <p className="text-white/50 mb-8">This jersey isn't in our inventory, or the link is broken.</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button onClick={() => navigate('shop')}
+              className="bg-lime-400 hover:bg-white text-black px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors">
+              Browse Shop
+            </button>
+            <button onClick={() => navigate('home')}
+              className="border border-white/10 hover:border-white text-white px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors">
+              Go Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const club = CLUBS.find(c => c.id === product.club);
 
   const [size, setSize] = useState('M');
@@ -3027,11 +3091,27 @@ const CartDrawer = () => {
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                 <ShoppingBag className="w-12 h-12 text-white/20 mb-4" />
                 <div className="text-white font-bold uppercase tracking-wide mb-2">Your bag is empty</div>
-                <div className="text-white/40 text-sm mb-6">Time to fill it with some heat.</div>
+                <div className="text-white/40 text-sm mb-6">Find your kit. Custom name & number on every jersey.</div>
                 <button onClick={() => { setCartOpen(false); navigate('shop'); }}
-                  className="bg-lime-400 text-black px-6 py-3 text-sm font-bold uppercase tracking-widest">
-                  Start shopping
+                  className="bg-lime-400 text-black px-6 py-3 text-sm font-bold uppercase tracking-widest hover:bg-white transition-colors mb-6">
+                  Browse all jerseys
                 </button>
+                <div className="w-full pt-6 border-t border-white/5">
+                  <div className="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-3">Quick links</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {[
+                      { label: 'World Cup 2026', filter: { wc2026: true } },
+                      { label: 'New Arrivals', filter: { isNew: true } },
+                      { label: 'Retro', filter: { type: 'Retro' } },
+                      { label: 'Kids', filter: { kidsOnly: true } },
+                    ].map(l => (
+                      <button key={l.label} onClick={() => { setCartOpen(false); navigate('shop', { filter: l.filter }); }}
+                        className="border border-white/10 py-2.5 text-white hover:border-lime-400 hover:text-lime-400 uppercase tracking-wide transition-colors">
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : (
               <>
@@ -3910,7 +3990,7 @@ const AboutPage = () => (
           For the love<br />of the <span className="italic font-serif font-normal text-lime-400">game</span>.
         </h1>
         <p className="mt-8 text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">
-          MehdiSports is a small operation run by one football obsessive out of Mississauga, Ontario.
+          MehdiSports is a small operation run by one football obsessive out of Toronto, Ontario.
           The mission: bring quality jerseys to fans worldwide without the retail markup
           — every league that matters, every era worth wearing.
         </p>
@@ -3932,7 +4012,7 @@ const AboutPage = () => (
     </section>
     <section className="py-20 max-w-3xl mx-auto px-4 md:px-8 text-white/70 leading-relaxed space-y-6">
       <h2 className="text-3xl font-black uppercase text-white">Our story</h2>
-      <p>Started in 2024 out of a Mississauga bedroom with a single goal: make it easy for fans anywhere in the world to wear the kit of the club they love, with the player name and number they want, without compromise on quality.</p>
+      <p>Started in 2024 out of a Toronto bedroom with a single goal: make it easy for fans anywhere in the world to wear the kit of the club they love, with the player name and number they want, without compromise on quality.</p>
       <p>Every jersey is hand-picked for AAA+ quality stitching and breathable fabric, then quality-checked individually before it leaves the warehouse. Match kits, retro classics, training gear — if it matters to the football world, we carry it.</p>
       <p>We're not a faceless dropshipper. Real person, real address, real WhatsApp number. If something's wrong, you get a real reply — usually within an hour.</p>
     </section>
@@ -3949,7 +4029,7 @@ const ContactPage = () => (
           {[
             { icon: Mail, label: 'Email', value: 'orders@mehdisports.com' },
             { icon: Phone, label: 'WhatsApp', value: '+1 (437) 259-5733' },
-            { icon: MapPin, label: 'HQ', value: 'Mississauga, ON · Canada' },
+            { icon: MapPin, label: 'HQ', value: 'Toronto, ON · Canada' },
             { icon: Globe, label: 'Hours', value: 'Mon–Fri · 9am–6pm ET' },
           ].map(c => (
             <div key={c.label} className="flex gap-4">
@@ -4070,7 +4150,7 @@ const PrivacyPage = () => <PolicyPage title="Privacy Policy" body={[
 
 // ---------- FOOTER ----------------------------------------------------------
 const Footer = () => {
-  const { navigate } = useStore();
+  const { navigate, currency, setCurrency } = useStore();
   return (
     <footer className="bg-zinc-950 border-t border-white/5 pt-16 pb-8">
       <div className="max-w-[1600px] mx-auto px-4 md:px-8">
@@ -4085,7 +4165,7 @@ const Footer = () => {
             <div className="mt-6 space-y-2 text-sm">
               <div className="flex items-start gap-2 text-white/60">
                 <MapPin className="w-4 h-4 mt-0.5 text-lime-400/80 flex-shrink-0" />
-                <span>Mississauga, ON · Canada</span>
+                <span>Toronto, ON · Canada</span>
               </div>
               <div className="flex items-start gap-2 text-white/60">
                 <Mail className="w-4 h-4 mt-0.5 text-lime-400/80 flex-shrink-0" />
@@ -4133,12 +4213,24 @@ const Footer = () => {
 
           <div className="md:col-span-2">
             <div className="text-xs uppercase tracking-widest text-white font-bold mb-4">Currency</div>
-            <select className="bg-black border border-white/10 text-white text-sm px-3 py-2 w-full outline-none">
-              <option>USD $</option>
-              <option>EUR €</option>
-              <option>GBP £</option>
-              <option>CAD $</option>
-              <option>AUD $</option>
+            <select
+              value={currency.code}
+              onChange={e => {
+                const opts = {
+                  USD: { code: 'USD', symbol: '$', rate: 1 },
+                  EUR: { code: 'EUR', symbol: '€', rate: 0.93 },
+                  GBP: { code: 'GBP', symbol: '£', rate: 0.79 },
+                  CAD: { code: 'CAD', symbol: 'C$', rate: 1.37 },
+                  AUD: { code: 'AUD', symbol: 'A$', rate: 1.53 },
+                };
+                setCurrency(opts[e.target.value]);
+              }}
+              className="bg-black border border-white/10 text-white text-sm px-3 py-2 w-full outline-none focus:border-lime-400">
+              <option value="USD">USD $</option>
+              <option value="EUR">EUR €</option>
+              <option value="GBP">GBP £</option>
+              <option value="CAD">CAD C$</option>
+              <option value="AUD">AUD A$</option>
             </select>
             <div className="text-xs uppercase tracking-widest text-white font-bold mt-6 mb-3">We Accept</div>
             <div className="flex flex-wrap gap-1.5">
