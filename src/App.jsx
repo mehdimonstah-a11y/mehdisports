@@ -649,6 +649,7 @@ const FLAG_BITS = {
   isRetro: 1, isKids: 2, isLongSleeve: 4, isPlayerVersion: 8,
   isSpecial: 16, isGoalkeeper: 32, isWomens: 64, isTraining: 128,
   isShorts: 256, isTracksuit: 512, isNew: 1024, isBest: 2048, isLimited: 4096,
+  isJacket: 8192, isPreMatch: 16384,
 };
 
 // Decompress a row from the catalog JSON into a full product object
@@ -692,6 +693,8 @@ const decompressProduct = (c) => {
     isNew: !!(fl & FLAG_BITS.isNew),
     isBest: !!(fl & FLAG_BITS.isBest),
     isLimited: !!(fl & FLAG_BITS.isLimited),
+    isJacket: !!(fl & FLAG_BITS.isJacket),
+    isPreMatch: !!(fl & FLAG_BITS.isPreMatch),
     tags: [c.v, c.ty, season, c.t].filter(Boolean),
   };
 };
@@ -1056,8 +1059,9 @@ const Header = () => {
     { label: 'New Arrivals', page: 'shop', params: { filter: { isNew: true } } },
     { label: 'Clubs', page: 'clubs', params: {} },
     { label: 'National Teams', page: 'shop', params: { filter: { league: 'International' } } },
-    { label: 'Kids', page: 'shop', params: { filter: { kidsOnly: true } } },
     { label: 'Retro', page: 'shop', params: { filter: { type: 'Retro' } } },
+    { label: 'Special Editions', page: 'shop', params: { filter: { special: true } } },
+    { label: 'Jackets', page: 'shop', params: { filter: { jacket: true } } },
   ];
 
   return (
@@ -1125,8 +1129,10 @@ const MobileMenu = () => {
     { label: 'Best Sellers', page: 'shop', params: { filter: { isBest: true } } },
     { label: 'Clubs', page: 'clubs', params: {} },
     { label: 'National Teams', page: 'shop', params: { filter: { league: 'International' } } },
-    { label: 'Kids Jerseys', page: 'shop', params: { filter: { kidsOnly: true } } },
     { label: 'Retro Jerseys', page: 'shop', params: { filter: { type: 'Retro' } } },
+    { label: 'Special Editions', page: 'shop', params: { filter: { special: true } } },
+    { label: 'Pre-Match', page: 'shop', params: { filter: { prematch: true } } },
+    { label: 'Jackets', page: 'shop', params: { filter: { jacket: true } } },
     { label: 'Training Kits', page: 'shop', params: { filter: { type: 'Training Kit' } } },
   ];
   return (
@@ -2131,7 +2137,9 @@ const ShopPage = () => {
     isNew: !!rf.isNew,
     isBest: !!rf.isBest,
     wc2026: !!rf.wc2026,
-    kidsOnly: !!rf.kidsOnly,
+    special: !!rf.special,
+    jacket: !!rf.jacket,
+    prematch: !!rf.prematch,
     careerTeams: rf.careerTeams || null,
     careerHistory: rf.careerHistory || null,
     playerCareer: rf.playerCareer || null,
@@ -2206,10 +2214,12 @@ const ShopPage = () => {
         if (p.isRetro || p.isKids || p.isShorts || p.isTracksuit || p.isTraining || p.isGoalkeeper || p.isLongSleeve) return false;
       }
 
-      // Kids-only filter — show all jerseys with a Kids variant available
-      if (filters.kidsOnly) {
-        if (!p.isKids && !(p.variants && p.variants.includes('Kids'))) return false;
-      }
+      // Special Editions filter
+      if (filters.special && !p.isSpecial) return false;
+      // Jackets filter
+      if (filters.jacket && !p.isJacket) return false;
+      // Pre-Match filter
+      if (filters.prematch && !p.isPreMatch) return false;
 
       // Player CAREER filter (when user clicks a player) — strict team + season window
       if (filters.careerHistory && Array.isArray(filters.careerHistory)) {
@@ -2288,21 +2298,6 @@ const ShopPage = () => {
       </div>
 
       <div className="border-t border-white/5 pt-6">
-        <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">Fit</div>
-        <div className="space-y-2">
-          {[
-            { val: false, label: 'All Sizes' },
-            { val: true, label: 'Kids Only' },
-          ].map(opt => (
-            <button key={String(opt.val)} onClick={() => setFilters(f => ({ ...f, kidsOnly: opt.val }))}
-              className={`block w-full text-left text-sm py-1 ${filters.kidsOnly === opt.val ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t border-white/5 pt-6">
         <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">Type</div>
         <div className="space-y-2">
           {[
@@ -2311,7 +2306,6 @@ const ShopPage = () => {
             { val: 'Retro', label: 'Retro' },
             { val: 'Training Kit', label: 'Training Kit' },
             { val: 'Tracksuit', label: 'Tracksuit' },
-            { val: 'Shorts', label: 'Shorts' },
             { val: 'Goalkeeper', label: 'Goalkeeper' },
             { val: 'Long Sleeve', label: 'Long Sleeve' },
           ].map(opt => (
@@ -2399,10 +2393,22 @@ const ShopPage = () => {
               <p className="mt-2 text-white/60 text-sm">Home kits from every qualified nation</p>
               <p className="mt-1 text-white/40 text-xs">{filtered.length} products</p>
             </>
-          ) : filters.kidsOnly ? (
+          ) : filters.special ? (
             <>
-              <div className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">For the next generation</div>
-              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Kids Jerseys</h1>
+              <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-2">Limited & collab</div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Special Editions</h1>
+              <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
+            </>
+          ) : filters.jacket ? (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">Outerwear</div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Jackets</h1>
+              <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
+            </>
+          ) : filters.prematch ? (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">Warm-up</div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Pre-Match</h1>
               <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
             </>
           ) : filters.isNew ? (
@@ -2606,8 +2612,6 @@ const ProductPage = () => {
   const club = CLUBS.find(c => c.id === product.club);
 
   const [size, setSize] = useState('M');
-  // Variant: Men's or Kids only (no Player/Fan distinction)
-  const hasKidsVariant = product.variants && product.variants.includes('Kids');
   const [selectedVariant, setSelectedVariant] = useState("Men's");
   const [qty, setQty] = useState(1);
   const [view, setView] = useState('front');
@@ -2644,10 +2648,9 @@ const ProductPage = () => {
     return 3 + (seed % 22);
   }, [product.id, product.isBest, product.isNew]);
 
-  // Pricing — uses product price directly (no variant markup since training/jersey is set in catalog)
-  // Kids variant gets a small discount
+  // Pricing — uses product price directly
   const basePrice = product.salePrice || product.price;
-  const price = selectedVariant === 'Kids' ? Math.max(29.99, basePrice - 10) : basePrice;
+  const price = basePrice;
   const customizationFee = (playerName || playerNumber) ? 10 : 0;
   const badgeFee = addBadge ? 7 : 0;
   const total = (price + customizationFee + badgeFee) * qty;
@@ -2780,30 +2783,8 @@ const ProductPage = () => {
             )}
           </div>
 
-          {/* Variant selector — Men's only, or Men's + Kids if catalog has Kids version */}
+          {/* Size + customization (adult inventory only) */}
           <div className="mt-8 space-y-6">
-            {hasKidsVariant && (
-              <div>
-                <div className="flex justify-between mb-3">
-                  <div className="text-xs uppercase tracking-[0.2em] text-white/60">Fit</div>
-                  <span className="text-xs text-lime-400">{selectedVariant}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {["Men's", "Kids"].map(v => {
-                    const vPrice = v === 'Kids' ? Math.max(29.99, product.price - 10) : product.price;
-                    return (
-                      <button key={v}
-                        onClick={() => setSelectedVariant(v)}
-                        className={`border-2 p-3 text-left transition-colors ${selectedVariant === v ? 'border-lime-400 bg-lime-400/10' : 'border-white/10 hover:border-white/30'}`}>
-                        <div className="text-sm text-white font-semibold">{v}</div>
-                        <div className="text-[11px] text-white/50 mt-0.5">{v === 'Kids' ? 'Youth sizes' : 'Standard'}</div>
-                        <div className="text-xs text-lime-400 font-bold mt-1">${vPrice.toFixed(2)}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* Size */}
             <div>
@@ -3091,7 +3072,7 @@ const CartDrawer = () => {
                       { label: 'World Cup 2026', filter: { wc2026: true } },
                       { label: 'New Arrivals', filter: { isNew: true } },
                       { label: 'Retro', filter: { type: 'Retro' } },
-                      { label: 'Kids', filter: { kidsOnly: true } },
+                      { label: 'Special Editions', filter: { special: true } },
                     ].map(l => (
                       <button key={l.label} onClick={() => { setCartOpen(false); navigate('shop', { filter: l.filter }); }}
                         className="border border-white/10 py-2.5 text-white hover:border-lime-400 hover:text-lime-400 uppercase tracking-wide transition-colors">
