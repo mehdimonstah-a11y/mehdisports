@@ -649,7 +649,7 @@ const FLAG_BITS = {
   isRetro: 1, isKids: 2, isLongSleeve: 4, isPlayerVersion: 8,
   isSpecial: 16, isGoalkeeper: 32, isWomens: 64, isTraining: 128,
   isShorts: 256, isTracksuit: 512, isNew: 1024, isBest: 2048, isLimited: 4096,
-  isJacket: 8192, isPreMatch: 16384,
+  isJacket: 8192, isPreMatch: 16384, hasLongSleeveOption: 32768, isIcon: 65536,
 };
 
 // Decompress a row from the catalog JSON into a full product object
@@ -695,6 +695,9 @@ const decompressProduct = (c) => {
     isLimited: !!(fl & FLAG_BITS.isLimited),
     isJacket: !!(fl & FLAG_BITS.isJacket),
     isPreMatch: !!(fl & FLAG_BITS.isPreMatch),
+    hasLongSleeveOption: !!(fl & FLAG_BITS.hasLongSleeveOption),
+    isIcon: !!(fl & FLAG_BITS.isIcon),
+    iconPlayer: c.icon_player || null,
     tags: [c.v, c.ty, season, c.t].filter(Boolean),
   };
 };
@@ -722,11 +725,13 @@ const StoreProvider = ({ children }) => {
     if (path.startsWith('/product/')) return { page: 'product', productId: path.replace('/product/', '') };
     if (path.startsWith('/shop')) {
       const filter = {};
+      let pageNum = 1;
       for (const [k, v] of params.entries()) {
+        if (k === 'page') { pageNum = parseInt(v) || 1; continue; }
         if (k === 'careerTeams') filter[k] = v.split(',');
         else filter[k] = v;
       }
-      return { page: 'shop', filter };
+      return { page: 'shop', filter, pageNum };
     }
     if (path === '/clubs') return { page: 'clubs' };
     if (path === '/wishlist') return { page: 'wishlist' };
@@ -818,6 +823,7 @@ const StoreProvider = ({ children }) => {
         if (Array.isArray(v)) q.set(k, v.join(','));
         else q.set(k, String(v));
       }
+      if (params.pageNum && params.pageNum > 1) q.set('page', String(params.pageNum));
       const qs = q.toString();
       return qs ? `/shop?${qs}` : '/shop';
     }
@@ -1057,9 +1063,10 @@ const Header = () => {
   const navLinks = [
     { label: 'World Cup 2026', page: 'shop', params: { filter: { wc2026: true } }, highlight: true },
     { label: 'New Arrivals', page: 'shop', params: { filter: { isNew: true } } },
+    { label: 'Iconic Players', page: 'shop', params: { filter: { icon: true } } },
     { label: 'Clubs', page: 'clubs', params: {} },
     { label: 'National Teams', page: 'shop', params: { filter: { league: 'International' } } },
-    { label: 'Retro', page: 'shop', params: { filter: { type: 'Retro' } } },
+    { label: 'Retro', page: 'shop', params: { filter: { retro: true } } },
     { label: 'Special Editions', page: 'shop', params: { filter: { special: true } } },
     { label: 'Jackets', page: 'shop', params: { filter: { jacket: true } } },
   ];
@@ -1126,10 +1133,12 @@ const MobileMenu = () => {
   const sections = [
     { label: 'World Cup 2026', page: 'shop', params: { filter: { wc2026: true } }, highlight: true },
     { label: 'New Arrivals', page: 'shop', params: { filter: { isNew: true } } },
+    { label: 'Iconic Players', page: 'shop', params: { filter: { icon: true } } },
     { label: 'Best Sellers', page: 'shop', params: { filter: { isBest: true } } },
     { label: 'Clubs', page: 'clubs', params: {} },
     { label: 'National Teams', page: 'shop', params: { filter: { league: 'International' } } },
-    { label: 'Retro Jerseys', page: 'shop', params: { filter: { type: 'Retro' } } },
+    { label: 'Retro — Clubs', page: 'shop', params: { filter: { retroClub: true } } },
+    { label: 'Retro — National Teams', page: 'shop', params: { filter: { retroNational: true } } },
     { label: 'Special Editions', page: 'shop', params: { filter: { special: true } } },
     { label: 'Pre-Match', page: 'shop', params: { filter: { prematch: true } } },
     { label: 'Jackets', page: 'shop', params: { filter: { jacket: true } } },
@@ -1414,7 +1423,7 @@ const Hero = () => {
               Shop new arrivals
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button onClick={() => navigate('shop', { filter: { type: 'Retro' } })}
+            <button onClick={() => navigate('shop', { filter: { retro: true } })}
               className="border border-white/20 hover:border-white text-white px-7 py-4 text-sm font-bold uppercase tracking-widest hover:bg-white/5 transition-colors">
               Retro Vault
             </button>
@@ -1524,30 +1533,31 @@ const NEW_ARRIVAL_CLUBS = [
 
 const NewArrivals = () => {
   const { navigate, catalogLoaded } = useStore();
-  // Pick the 26/27 home jersey for each major club (fall back to 25/26 if no 26/27)
+  // 26/27 jerseys ONLY (no fallback) — per New Arrivals = 26/27 rule
   const items = useMemo(() => {
+    const is2627 = (s) => s === '26/27' || s === '2026/27' || s === '2026/2027' || s === '2026';
     const picked = [];
+    // Prefer major clubs' 26/27 home first for visual appeal
     for (const clubName of NEW_ARRIVAL_CLUBS) {
-      // Try 26/27 home first
-      let match = PRODUCTS.find(p =>
-        p.clubName === clubName &&
-        p.variant === 'Home' &&
-        !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
-        !p.isTraining && !p.isGoalkeeper && !p.isSpecial && !p.isLongSleeve &&
-        (p.season === '26/27' || p.season === '2026/27' || p.season === '2026/2027')
+      const match = PRODUCTS.find(p =>
+        p.clubName === clubName && p.variant === 'Home' &&
+        !p.isRetro && !p.isKids && !p.isTraining && !p.isGoalkeeper &&
+        !p.isSpecial && !p.isJacket && is2627(p.season)
       );
-      // Fall back to 25/26
-      if (!match) {
-        match = PRODUCTS.find(p =>
-          p.clubName === clubName &&
-          p.variant === 'Home' &&
-          !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
-          !p.isTraining && !p.isGoalkeeper && !p.isSpecial && !p.isLongSleeve &&
-          (p.season === '25/26' || p.season === '2025/26')
-        );
-      }
       if (match) picked.push(match);
       if (picked.length >= 8) break;
+    }
+    // Fill remaining slots with any other 26/27 jerseys
+    if (picked.length < 8) {
+      const ids = new Set(picked.map(p => p.id));
+      for (const p of PRODUCTS) {
+        if (picked.length >= 8) break;
+        if (ids.has(p.id)) continue;
+        if (is2627(p.season) && !p.isRetro && !p.isKids && !p.isTraining &&
+            !p.isGoalkeeper && !p.isJacket && p.variant === 'Home') {
+          picked.push(p); ids.add(p.id);
+        }
+      }
     }
     return picked;
   }, [catalogLoaded]);
@@ -1834,7 +1844,7 @@ const RetroSection = () => {
             Iconic kits from the eras that defined football. Maradona '86. Ronaldinho's Barça. Istanbul 2005.
             Reborn for a new generation.
           </p>
-          <button onClick={() => navigate('shop', { filter: { type: 'Retro' } })}
+          <button onClick={() => navigate('shop', { filter: { retro: true } })}
             className="mt-7 bg-amber-500 hover:bg-amber-400 text-black px-7 py-4 text-sm font-bold uppercase tracking-widest inline-flex items-center gap-2">
             Enter the vault <ArrowRight className="w-4 h-4" />
           </button>
@@ -1966,7 +1976,6 @@ const HomePage = () => (
     <TrendingClubs />
     <WorldCup2026 />
     <PromoBanner />
-    <FeaturedPlayers />
     <RetroSection />
     <RecentlyViewedSection currentProductId={null} />
     <Testimonials />
@@ -2123,7 +2132,7 @@ const TrustBar = () => (
 
 // ---------- SHOP PAGE -------------------------------------------------------
 const ShopPage = () => {
-  const { route, catalogLoaded } = useStore();
+  const { route, catalogLoaded, navigate } = useStore();
   // Build a clean filter state from a route filter object (no carry-over from prev)
   const buildFilterState = (rf = {}) => ({
     league: rf.league || '',
@@ -2140,6 +2149,10 @@ const ShopPage = () => {
     special: !!rf.special,
     jacket: !!rf.jacket,
     prematch: !!rf.prematch,
+    icon: !!rf.icon,
+    retro: !!rf.retro,
+    retroClub: !!rf.retroClub,
+    retroNational: !!rf.retroNational,
     careerTeams: rf.careerTeams || null,
     careerHistory: rf.careerHistory || null,
     playerCareer: rf.playerCareer || null,
@@ -2147,14 +2160,14 @@ const ShopPage = () => {
   const [filters, setFilters] = useState(() => buildFilterState(route.filter));
   const [sort, setSort] = useState('featured');
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(route.pageNum || 1);
   const PER_PAGE = 24;
 
   // When the route changes (user clicks a new category), FULLY REPLACE filter state
-  // This prevents stale filter carry-over (e.g. league filter persisting after clicking a different nav link)
+  // Restore page number from URL (so Back from a product returns to the right page)
   useEffect(() => {
     setFilters(buildFilterState(route.filter));
-    setPage(1);
+    setPage(route.pageNum || 1);
   }, [route]);
 
   // Helper: extract starting year from a product's season string ("25/26" → 2025, "2025/26" → 2025, "1990" → 1990)
@@ -2175,22 +2188,58 @@ const ShopPage = () => {
     return null;
   };
 
+  // Determine if a season is "current" (18/19 through 26/27) vs retro (older)
+  const isCurrentSeason = (p) => {
+    const y = getSeasonStartYear(p.season);
+    if (y == null) return true; // unknown season → treat as current
+    return y >= 2018;
+  };
+
   const filtered = useMemo(() => {
+    // Determine which "collection mode" we're in
+    const inJackets = !!filters.jacket;
+    const inSpecial = !!filters.special;
+    const inRetro = filters.type === 'Retro' || filters.retro || filters.retroClub || filters.retroNational;
+    const inWC = !!filters.wc2026;
+    const inPrematch = !!filters.prematch;
+    const inIcons = !!filters.icon;
+
     let result = PRODUCTS.filter(p => {
+      // ---- GLOBAL SECTION ISOLATION ----
+      // Icon jerseys ONLY appear in the Iconic Players collection
+      if (p.isIcon && !inIcons) return false;
+      if (inIcons && !p.isIcon) return false;
+      // Jackets ONLY appear in the Jackets collection
+      if (p.isJacket && !inJackets) return false;
+      // Special editions ONLY appear in Special Editions
+      if (p.isSpecial && !inSpecial && !inRetro) return false;
+
+      // ---- RETRO vs CURRENT STRUCTURE (item 3) ----
+      // Retro = isRetro flag OR season older than 18/19
+      const productIsRetro = p.isRetro || !isCurrentSeason(p);
+      if (inRetro) {
+        // In a Retro view: only show retro products
+        if (!productIsRetro) return false;
+        // Retro Club vs National split (item 2)
+        if (filters.retroClub && p.league === 'International') return false;
+        if (filters.retroNational && p.league !== 'International') return false;
+      } else {
+        // In normal browsing (clubs/national/new/etc): hide retro/old jerseys entirely
+        if (productIsRetro) return false;
+      }
+
       // League filter — direct match
       if (filters.league && p.league !== filters.league) return false;
 
-      // Jersey TYPE filter (Retro / Training Kit / Tracksuit / Shorts etc.)
-      // Maps user-facing filter values to product flags/types
+      // Jersey TYPE filter
       if (filters.type) {
-        if (filters.type === 'Retro' && !p.isRetro) return false;
+        if (filters.type === 'Retro' && !productIsRetro) return false;
         if (filters.type === 'Training Kit' && !p.isTraining) return false;
         if (filters.type === 'Tracksuit' && !p.isTracksuit) return false;
         if (filters.type === 'Shorts' && !p.isShorts) return false;
         if (filters.type === 'Goalkeeper' && !p.isGoalkeeper) return false;
         if (filters.type === 'Long Sleeve' && !p.isLongSleeve) return false;
-        // For "Jersey" type — exclude special categories
-        if (filters.type === 'Jersey' && (p.isRetro || p.isTraining || p.isTracksuit || p.isShorts)) return false;
+        if (filters.type === 'Jersey' && (productIsRetro || p.isTraining || p.isTracksuit || p.isShorts)) return false;
       }
 
       // VERSION filter (Player Version / Fan Version / Kids) — checks product.variants
@@ -2203,7 +2252,11 @@ const ShopPage = () => {
 
       // BOOLEAN filters
       if (filters.onSale && !p.salePrice) return false;
-      if (filters.isNew && !p.isNew) return false;
+      if (filters.isNew) {
+        const s = p.season || '';
+        const is2627 = s === '26/27' || s === '2026/27' || s === '2026/2027' || s === '2026';
+        if (!is2627) return false;
+      }
       if (filters.isBest && !p.isBest) return false;
 
       // World Cup 2026 filter — qualified national teams only, current/upcoming home kits
@@ -2211,7 +2264,11 @@ const ShopPage = () => {
         const wcTeams = ['Argentina','Brazil','France','England','Portugal','Spain','Germany','Netherlands','Mexico','USA','Canada','Morocco','Japan','Croatia','Belgium','South Korea','Senegal','Australia','Switzerland','Denmark','Uruguay','Colombia','Ecuador','Norway'];
         if (!wcTeams.includes(p.clubName)) return false;
         if (p.variant !== 'Home') return false;
-        if (p.isRetro || p.isKids || p.isShorts || p.isTracksuit || p.isTraining || p.isGoalkeeper || p.isLongSleeve) return false;
+        if (p.isRetro || p.isKids || p.isTraining || p.isGoalkeeper || p.isSpecial || p.isJacket) return false;
+        // 26/27 (or 2026) home kits only
+        const s = p.season || '';
+        const ok = s === '26/27' || s === '2026/27' || s === '2026/2027' || s === '2026';
+        if (!ok) return false;
       }
 
       // Special Editions filter
@@ -2242,29 +2299,34 @@ const ShopPage = () => {
       return true;
     });
 
-    // Sort match kits FIRST for a club page (Home > Away > Third > Goalkeeper > Training > Pre-Match)
-    if (filters.clubName) {
-      const variantOrder = { 'Home': 0, 'Away': 1, 'Third': 2, 'Fourth': 3, 'Goalkeeper': 4 };
+    // Global default ordering: newest season first, then Home > Away > Third > GK
+    const seasonStartYear = (s) => {
+      if (!s) return 0;
+      const m4 = (s.match(/(\d{4})/) || [])[1];
+      if (m4) return parseInt(m4);
+      const m2 = s.match(/(\d{2})\/(\d{2})/);
+      if (m2) { const yy = parseInt(m2[1]); return yy < 50 ? 2000 + yy : 1900 + yy; }
+      return 0;
+    };
+    const variantOrder = { 'Home': 0, 'Away': 1, 'Third': 2, 'Fourth': 3, 'Goalkeeper': 4 };
+
+    if (sort === 'featured') {
       result.sort((a, b) => {
-        // Match kits before training/special
-        const aMatch = (!a.isTraining && !a.isShorts && !a.isTracksuit) ? 0 : 1;
-        const bMatch = (!b.isTraining && !b.isShorts && !b.isTracksuit) ? 0 : 1;
-        if (aMatch !== bMatch) return aMatch - bMatch;
-        // Then by variant order
-        const av = variantOrder[a.variant] ?? 5;
-        const bv = variantOrder[b.variant] ?? 5;
-        if (av !== bv) return av - bv;
-        // Then by recency (most recent season first)
-        const ay = parseInt((a.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
-        const by = parseInt((b.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
-        return by - ay;
+        // Current jerseys before retro
+        if (!!a.isRetro !== !!b.isRetro) return a.isRetro ? 1 : -1;
+        // Newest season first
+        const ay = seasonStartYear(a.season), by = seasonStartYear(b.season);
+        if (ay !== by) return by - ay;
+        // Home > Away > Third > GK
+        const av = variantOrder[a.variant] ?? 5, bv = variantOrder[b.variant] ?? 5;
+        return av - bv;
       });
     }
 
     switch (sort) {
       case 'price-low': result.sort((a, b) => (a.salePrice || a.price) - (b.salePrice || b.price)); break;
       case 'price-high': result.sort((a, b) => (b.salePrice || b.price) - (a.salePrice || a.price)); break;
-      case 'newest': result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0)); break;
+      case 'newest': result.sort((a, b) => seasonStartYear(b.season) - seasonStartYear(a.season)); break;
       case 'rating': result.sort((a, b) => b.rating - a.rating); break;
     }
     return result;
@@ -2318,15 +2380,26 @@ const ShopPage = () => {
       </div>
 
       <div className="border-t border-white/5 pt-6">
-        <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">Club</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">
+          {filters.league === 'International' ? 'Nation' : 'Club'}
+        </div>
         <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-          {['', ...Array.from(new Set(PRODUCTS.map(p => p.clubName))).filter(Boolean).sort()].map(c => (
-            <button key={c || 'all'} onClick={() => setFilters(f => ({ ...f, clubName: c }))}
-              className={`flex justify-between items-center w-full text-left text-sm py-1 ${filters.clubName === c ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
-              <span className="truncate">{c || 'All Clubs'}</span>
-              {c && <span className="text-white/30 text-xs flex-shrink-0 ml-2">{clubCounts[c] || 0}</span>}
-            </button>
-          ))}
+          {(() => {
+            // When in National Teams view, list nations; otherwise list clubs
+            const isNational = filters.league === 'International' || filters.retroNational;
+            const names = Array.from(new Set(
+              PRODUCTS
+                .filter(p => isNational ? p.league === 'International' : true)
+                .map(p => p.clubName)
+            )).filter(Boolean).sort();
+            return ['', ...names].map(c => (
+              <button key={c || 'all'} onClick={() => setFilters(f => ({ ...f, clubName: c }))}
+                className={`flex justify-between items-center w-full text-left text-sm py-1 ${filters.clubName === c ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
+                <span className="truncate">{c || (isNational ? 'All Nations' : 'All Clubs')}</span>
+                {c && <span className="text-white/30 text-xs flex-shrink-0 ml-2">{clubCounts[c] || 0}</span>}
+              </button>
+            ));
+          })()}
         </div>
       </div>
 
@@ -2391,6 +2464,21 @@ const ShopPage = () => {
                 Road To 26
               </h1>
               <p className="mt-2 text-white/60 text-sm">Home kits from every qualified nation</p>
+              <p className="mt-1 text-white/40 text-xs">{filtered.length} products</p>
+            </>
+          ) : (filters.retro || filters.retroClub || filters.retroNational) ? (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-amber-400 mb-2">The vault</div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">
+                {filters.retroClub ? 'Retro · Clubs' : filters.retroNational ? 'Retro · National Teams' : 'Retro Jerseys'}
+              </h1>
+              <p className="mt-2 text-white/50 text-sm">Classic kits from football's golden eras · {filtered.length} products</p>
+            </>
+          ) : filters.icon ? (
+            <>
+              <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-2">Legends of the game</div>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Iconic Players</h1>
+              <p className="mt-2 text-white/50 text-sm">The shirts that defined the greats · name included</p>
               <p className="mt-1 text-white/40 text-xs">{filtered.length} products</p>
             </>
           ) : filters.special ? (
@@ -2477,7 +2565,7 @@ const ShopPage = () => {
                     {[
                       { label: 'New 26/27', filter: { isNew: true } },
                       { label: 'World Cup', filter: { wc2026: true } },
-                      { label: 'Retro Vault', filter: { type: 'Retro' } },
+                      { label: 'Retro Vault', filter: { retro: true } },
                       { label: 'Best Sellers', filter: { isBest: true } },
                     ].map(l => (
                       <button key={l.label} onClick={() => navigate('shop', { filter: l.filter })}
@@ -2497,7 +2585,7 @@ const ShopPage = () => {
                 {/* Pagination */}
                 {filtered.length > PER_PAGE && (
                   <div className="mt-10 flex items-center justify-between border-t border-white/5 pt-6">
-                    <button onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    <button onClick={() => { const np = Math.max(1, page - 1); setPage(np); navigate('shop', { filter: filters, pageNum: np }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                       disabled={page === 1}
                       className="px-5 py-2.5 border border-white/10 text-white text-xs uppercase tracking-widest font-bold hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2">
                       <ChevronLeft className="w-4 h-4" /> Prev
@@ -2506,7 +2594,7 @@ const ShopPage = () => {
                       Page <span className="text-white font-bold">{page}</span> of <span className="text-white font-bold">{Math.ceil(filtered.length / PER_PAGE)}</span>
                       <span className="hidden md:inline text-white/30 ml-3">· {filtered.length.toLocaleString()} results</span>
                     </div>
-                    <button onClick={() => { setPage(p => Math.min(Math.ceil(filtered.length / PER_PAGE), p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    <button onClick={() => { const np = Math.min(Math.ceil(filtered.length / PER_PAGE), page + 1); setPage(np); navigate('shop', { filter: filters, pageNum: np }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                       disabled={page >= Math.ceil(filtered.length / PER_PAGE)}
                       className="px-5 py-2.5 border border-white/10 text-white text-xs uppercase tracking-widest font-bold hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2">
                       Next <ChevronRight className="w-4 h-4" />
@@ -2613,6 +2701,7 @@ const ProductPage = () => {
 
   const [size, setSize] = useState('M');
   const [selectedVariant, setSelectedVariant] = useState("Men's");
+  const [sleeve, setSleeve] = useState('Short Sleeve');
   const [qty, setQty] = useState(1);
   const [view, setView] = useState('front');
   const [playerName, setPlayerName] = useState(route.prefillPlayer?.name || '');
@@ -2650,9 +2739,10 @@ const ProductPage = () => {
 
   // Pricing — uses product price directly
   const basePrice = product.salePrice || product.price;
-  const price = basePrice;
+  const sleeveFee = (product.hasLongSleeveOption && sleeve === 'Long Sleeve') ? 5 : 0;
+  const price = basePrice + sleeveFee;
   const customizationFee = (playerName || playerNumber) ? 10 : 0;
-  const badgeFee = addBadge ? 7 : 0;
+  const badgeFee = addBadge ? 5 : 0;
   const total = (price + customizationFee + badgeFee) * qty;
 
   // Related products — same team or same league
@@ -2786,6 +2876,25 @@ const ProductPage = () => {
           {/* Size + customization (adult inventory only) */}
           <div className="mt-8 space-y-6">
 
+            {/* Sleeve length — only when product offers a long sleeve option */}
+            {product.hasLongSleeveOption && (
+              <div>
+                <div className="text-xs uppercase tracking-[0.2em] text-white/60 mb-3">Sleeve — {sleeve}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { val: 'Short Sleeve', extra: '' },
+                    { val: 'Long Sleeve', extra: '+$5' },
+                  ].map(opt => (
+                    <button key={opt.val} onClick={() => setSleeve(opt.val)}
+                      className={`py-3 px-4 border-2 text-sm font-semibold transition-colors flex items-center justify-between ${sleeve === opt.val ? 'border-lime-400 bg-lime-400/10 text-white' : 'border-white/10 text-white/80 hover:border-white/30'}`}>
+                      <span>{opt.val}</span>
+                      {opt.extra && <span className="text-lime-400 text-xs font-bold">{opt.extra}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Size */}
             <div>
               <div className="flex justify-between items-center mb-3">
@@ -2802,7 +2911,18 @@ const ProductPage = () => {
               </div>
             </div>
 
-            {/* Customization */}
+            {/* Customization — hidden for Icon jerseys (player name is fixed) */}
+            {product.isIcon ? (
+              <div className="border border-lime-400/30 bg-lime-400/5 p-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <Award className="w-4 h-4 text-lime-400" />
+                  <div className="text-xs uppercase tracking-[0.2em] text-lime-400 font-bold">Icon Edition</div>
+                </div>
+                <p className="text-sm text-white/70">
+                  Officially printed with <span className="text-white font-semibold">{product.iconPlayer}</span>'s name & number. Custom printing is included — no further customization needed.
+                </p>
+              </div>
+            ) : (
             <div className="border border-white/10 p-5">
               <div className="flex items-center justify-between mb-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-white">Custom Print</div>
@@ -2833,6 +2953,7 @@ const ProductPage = () => {
               </div>
               <div className="mt-3 text-[11px] text-white/40">Adds 2 days to delivery. Final once printed.</div>
             </div>
+            )}
 
             {/* Badge */}
             <label className="flex items-start gap-3 cursor-pointer border border-white/10 p-4 hover:border-white/30">
@@ -2843,7 +2964,7 @@ const ProductPage = () => {
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-white text-sm font-semibold">Add competition badge</span>
-                  <span className="text-lime-400 text-xs font-bold">+$7</span>
+                  <span className="text-lime-400 text-xs font-bold">+$5</span>
                 </div>
                 <div className="text-[11px] text-white/40 mt-1">Champions League, Premier League, La Liga patches available.</div>
               </div>
@@ -2856,7 +2977,7 @@ const ProductPage = () => {
                 <span className="w-10 text-center text-white font-semibold">{qty}</span>
                 <button onClick={() => setQty(q => q + 1)} className="p-3 text-white hover:bg-white/5"><Plus className="w-4 h-4" /></button>
               </div>
-              <button onClick={() => addToCart(product, { size, qty, playerName, playerNumber, addBadge, variant: selectedVariant, unitPrice: price })}
+              <button onClick={() => addToCart(product, { size, qty, playerName, playerNumber, addBadge, variant: selectedVariant, sleeve, unitPrice: price })}
                 className="flex-1 bg-lime-400 hover:bg-white text-black px-6 py-4 font-bold uppercase tracking-widest text-sm transition-colors flex items-center justify-center gap-3">
                 <ShoppingBag className="w-4 h-4" /> Add to bag — ${total.toFixed(2)}
               </button>
@@ -2937,7 +3058,7 @@ const ProductPage = () => {
           {/* Shipping */}
           <div className="mt-8 border border-white/10 divide-y divide-white/10">
             {[
-              { icon: Truck, title: 'Shipping', text: 'Free standard shipping on orders over $99. 7-12 business days delivery.' },
+              { icon: Truck, title: 'Shipping', text: 'Free standard shipping on orders over $99. 5-10 business days delivery.' },
               { icon: RotateCcw, title: 'Returns', text: '30-day free returns. Customized items final sale.' },
               { icon: Shield, title: 'Quality', text: 'Premium stitching and fabric. Quality-checked before shipping.' },
             ].map(item => (
@@ -2979,7 +3100,7 @@ const ProductPage = () => {
             <div className="text-[10px] text-white/40 uppercase tracking-widest">Size {size}</div>
             <div className="text-white font-bold text-lg leading-tight">${total.toFixed(2)}</div>
           </div>
-          <button onClick={() => addToCart(product, { size, qty, playerName, playerNumber, addBadge, variant: selectedVariant, unitPrice: price })}
+          <button onClick={() => addToCart(product, { size, qty, playerName, playerNumber, addBadge, variant: selectedVariant, sleeve, unitPrice: price })}
             className="bg-lime-400 hover:bg-white text-black px-5 py-3.5 font-bold uppercase tracking-widest text-xs flex items-center gap-2 active:scale-95 transition-transform">
             <ShoppingBag className="w-4 h-4" /> Add to Bag
           </button>
@@ -3071,7 +3192,7 @@ const CartDrawer = () => {
                     {[
                       { label: 'World Cup 2026', filter: { wc2026: true } },
                       { label: 'New Arrivals', filter: { isNew: true } },
-                      { label: 'Retro', filter: { type: 'Retro' } },
+                      { label: 'Retro', filter: { retro: true } },
                       { label: 'Special Editions', filter: { special: true } },
                     ].map(l => (
                       <button key={l.label} onClick={() => { setCartOpen(false); navigate('shop', { filter: l.filter }); }}
@@ -3163,7 +3284,7 @@ const CartDrawer = () => {
 
 // ---------- CHECKOUT PAGE ---------------------------------------------------
 const CheckoutPage = () => {
-  const { cart, subtotal, navigate } = useStore();
+  const { cart, subtotal, navigate, removeFromCart } = useStore();
   const [step, setStep] = useState(1);
   const [info, setInfo] = useState({ email: '', firstName: '', lastName: '', address: '', city: '', zip: '', country: 'Canada', phone: '' });
   const [shipping, setShipping] = useState('standard');
@@ -3172,10 +3293,20 @@ const CheckoutPage = () => {
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber] = useState('MS' + Math.floor(Math.random() * 900000 + 100000));
   const [paymentMethod, setPaymentMethod] = useState(''); // 'interac' | 'crypto'
-  const [cryptoCurrency, setCryptoCurrency] = useState('USDT'); // USDT | BTC | ETH
+  const [cryptoCurrency, setCryptoCurrency] = useState('ETH'); // ETH | BTC | USDC
   const [submitting, setSubmitting] = useState(false);
 
-  const shippingCost = subtotal >= 99 ? 0 : 9;
+  // Location-based shipping rate ($5-15 by region). Free over $99.
+  const shippingRate = (() => {
+    const c = (info.country || '').toLowerCase().trim();
+    if (['canada','ca'].includes(c)) return 5;
+    if (['united states','usa','us','united states of america'].includes(c)) return 7;
+    if (['united kingdom','uk','england','scotland','wales','ireland','france','germany','spain','italy','netherlands','belgium','portugal'].includes(c)) return 10;
+    if (['australia','new zealand','japan','south korea','singapore','uae','united arab emirates','saudi arabia'].includes(c)) return 13;
+    if (!c) return 9; // default before country entered
+    return 15; // rest of world
+  })();
+  const shippingCost = subtotal >= 99 ? 0 : shippingRate;
   const tax = (subtotal - discount.applied) * 0.13;
   const total = subtotal + shippingCost + tax - discount.applied;
 
@@ -3203,9 +3334,24 @@ const CheckoutPage = () => {
     }
   };
 
-  // Submit the order — sends email to admin via Formspree-style endpoint
-  // Replace YOUR_FORMSPREE_ID with your real Formspree form ID once you sign up at formspree.io (free, 50 submissions/mo)
+  // Submit the order — sends email to admin via Formspree
   const submitOrder = async () => {
+    // ---- VALIDATION ----
+    const errs = [];
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(info.email || '');
+    const phoneOk = /^[\d\s()+\-]{7,}$/.test(info.phone || '');
+    if (!info.firstName?.trim()) errs.push('First name');
+    if (!info.lastName?.trim()) errs.push('Last name');
+    if (!emailOk) errs.push('Valid email');
+    if (!phoneOk) errs.push('Valid phone number');
+    if (!info.address?.trim()) errs.push('Address');
+    if (!info.city?.trim()) errs.push('City');
+    if (!info.postal?.trim() && !info.zip?.trim()) errs.push('Postal/ZIP code');
+    if (!info.country?.trim()) errs.push('Country');
+    if (errs.length) {
+      alert('Please complete: ' + errs.join(', '));
+      return;
+    }
     if (!paymentMethod) {
       alert('Please select a payment method');
       return;
@@ -3247,6 +3393,8 @@ const CheckoutPage = () => {
       if (!res.ok) throw new Error('Order submission failed');
 
       setOrderComplete(true);
+      // Clear the cart after a successful order
+      cart.forEach(i => removeFromCart(i.key));
     } catch (e) {
       alert('Something went wrong submitting your order. Please contact us on WhatsApp or email orders@mehdisports.com and we\'ll process your order manually.');
     } finally {
@@ -3301,19 +3449,33 @@ const CheckoutPage = () => {
               </div>
             )}
 
-            {paymentMethod === 'crypto' && (
-              <div className="bg-lime-400/10 border-2 border-lime-400/40 p-5 mb-6 text-left">
-                <div className="text-xs uppercase tracking-widest text-lime-400 font-bold mb-3">⚡ Complete your {cryptoCurrency} payment</div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-white"><span className="text-white/60">Currency:</span><span className="font-bold">{cryptoCurrency}</span></div>
-                  <div className="flex justify-between text-white"><span className="text-white/60">Amount:</span><span className="font-bold">${(total * 0.95).toFixed(2)} USD</span></div>
+            {paymentMethod === 'crypto' && (() => {
+              const WALLETS = {
+                ETH:  { addr: '0x972D8D7404F461D65236A83b7546bcb668e5C46F', label: 'Ethereum (ETH)', net: 'Ethereum Network' },
+                BTC:  { addr: '3EARaNMYyPfmqieDXHvuQwMdGU6Vuo7XZw', label: 'Bitcoin (BTC)', net: 'Bitcoin Network' },
+                USDC: { addr: '0x972D8D7404F461D65236A83b7546bcb668e5C46F', label: 'USDC', net: 'Ethereum Network (ERC-20)' },
+              };
+              const w = WALLETS[cryptoCurrency] || WALLETS.ETH;
+              return (
+              <div className="bg-zinc-950 border-2 border-lime-400/40 p-5 mb-6 text-left">
+                <div className="text-xs uppercase tracking-widest text-lime-400 font-bold mb-4">Send {w.label} to complete your order</div>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between text-white"><span className="text-white/60">Amount due:</span><span className="font-bold">${total.toFixed(2)} USD equivalent</span></div>
+                  <div className="flex justify-between text-white"><span className="text-white/60">Network:</span><span className="font-bold">{w.net}</span></div>
                   <div className="flex justify-between text-white"><span className="text-white/60">Order ref:</span><span className="font-bold">{orderNumber}</span></div>
+                  <div className="pt-2">
+                    <div className="text-white/60 text-xs mb-1.5">Wallet address:</div>
+                    <div className="bg-black border border-white/10 p-3 break-all font-mono text-xs text-lime-400 select-all">{w.addr}</div>
+                    <button onClick={() => { navigator.clipboard?.writeText(w.addr); setToast && setToast({msg:'Address copied',kind:'success'}); }}
+                      className="mt-2 text-xs text-lime-400 hover:text-white underline">Copy address</button>
+                  </div>
                 </div>
                 <div className="text-[11px] text-white/50 mt-4 pt-3 border-t border-white/10">
-                  Check your email — we've sent your wallet address and exact crypto amount. Send within 30 minutes to lock in the rate. Ships within 1 hour of on-chain confirmation.
+                  Send the exact amount to the address above, then email your transaction hash to <span className="text-white">orders@mehdisports.com</span> with your order ref. We ship within 1 hour of on-chain confirmation.
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             <p className="text-white/60 text-sm mb-8">
               A confirmation with payment details has been sent to <span className="text-white">{info.email || 'your email'}</span>.
@@ -3423,7 +3585,7 @@ const CheckoutPage = () => {
           {step === 2 && (
             <div className="space-y-3">
               {[
-                { id: 'standard', name: 'Standard Shipping', time: '7-12 business days', price: subtotal >= 99 ? 0 : 9 },
+                { id: 'standard', name: 'Standard Shipping', time: '5-10 business days', price: subtotal >= 99 ? 0 : shippingRate },
               ].map(opt => (
                 <label key={opt.id}
                   className={`flex items-center justify-between p-4 border-2 cursor-pointer ${shipping === opt.id ? 'border-lime-400 bg-lime-400/5' : 'border-white/10'}`}>
@@ -3520,9 +3682,9 @@ const CheckoutPage = () => {
                     <div className="text-xs uppercase tracking-widest text-white/40 mb-1">Select cryptocurrency</div>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { code: 'USDT', name: 'USDT (TRC20)', desc: 'Tether on Tron · low fees' },
-                        { code: 'BTC', name: 'Bitcoin', desc: 'BTC mainnet' },
                         { code: 'ETH', name: 'Ethereum', desc: 'ETH mainnet' },
+                        { code: 'BTC', name: 'Bitcoin', desc: 'BTC mainnet' },
+                        { code: 'USDC', name: 'USDC', desc: 'ERC-20 · Ethereum' },
                       ].map(c => (
                         <button key={c.code} type="button" onClick={() => setCryptoCurrency(c.code)}
                           className={`p-3 border-2 text-left transition-colors ${cryptoCurrency === c.code ? 'border-lime-400 bg-lime-400/10' : 'border-white/10 hover:border-white/30'}`}>
@@ -3533,10 +3695,10 @@ const CheckoutPage = () => {
                     </div>
                     <div className="p-4 bg-black border border-white/10 space-y-2">
                       <div className="text-xs text-white/60">
-                        <span className="text-lime-400 font-bold">Amount with 5% crypto discount:</span> ${(total * 0.95).toFixed(2)} USD
+                        <span className="text-lime-400 font-bold">Amount due:</span> ${total.toFixed(2)} USD equivalent in {cryptoCurrency}
                       </div>
                       <div className="text-[11px] text-white/40 mt-2">
-                        After you place your order, you'll receive an email with the exact wallet address and amount in {cryptoCurrency}. Send within 30 minutes to lock in the rate. We'll ship within 1 hour of on-chain confirmation.
+                        Place your order to see the wallet address. Send the exact amount, then email your transaction hash to orders@mehdisports.com. Ships within 1 hour of on-chain confirmation.
                       </div>
                     </div>
                   </div>
@@ -3692,14 +3854,14 @@ const ClubsPage = () => {
         byLeague[p.league].get(p.clubName).count += 1;
       }
     }
-    // Convert to array, sort
+    // Convert to array, sort clubs ALPHABETICALLY within each league
     const leagues = Object.entries(byLeague)
       .map(([league, clubsMap]) => ({
         name: league,
-        clubs: Array.from(clubsMap.values()).sort((a, b) => b.count - a.count),
+        clubs: Array.from(clubsMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
         totalProducts: Array.from(clubsMap.values()).reduce((s, c) => s + c.count, 0),
       }))
-      .sort((a, b) => b.totalProducts - a.totalProducts);
+      .sort((a, b) => a.name.localeCompare(b.name));
     return leagues;
   }, [catalogLoaded]);
 
@@ -4040,7 +4202,7 @@ const ContactPage = () => (
 
 const FAQPage = () => {
   const faqs = [
-    { q: 'How long does shipping take?', a: 'Standard shipping is 7-12 business days worldwide. Custom-printed jerseys add 1-2 days for production.' },
+    { q: 'How long does shipping take?', a: 'Standard shipping is 5-10 business days worldwide. Custom-printed jerseys add 1-2 days for production.' },
     { q: 'What\'s the difference between Player and Fan versions?', a: 'Player Version is the on-pitch cut — pro-fit, premium fabric, laser-cut ventilation. Fan Version is more relaxed in fit with standard fabric, designed for everyday wear.' },
     { q: 'Can I return a customized jersey?', a: 'Custom-printed jerseys (with name/number) are final sale. Non-customized jerseys can be returned within 30 days, unworn with tags.' },
     { q: 'Do you ship internationally?', a: 'Yes, we ship to 120+ countries. International shipping is calculated at checkout. Free shipping on international orders over $100.' },
@@ -4087,7 +4249,7 @@ const PolicyPage = ({ title, body }) => (
 
 const ShippingPolicy = () => <PolicyPage title="Shipping Policy" body={[
   { h: 'Processing time', p: 'Orders ship within 1-2 business days. Custom-printed jerseys (name/number) require an additional 1-2 days for production.' },
-  { h: 'Domestic shipping (US/Canada)', p: 'Standard: 7-12 business days · $9 (free over $99).' },
+  { h: 'Domestic shipping (US/Canada)', p: 'Standard: 5-10 business days · $9 (free over $99).' },
   { h: 'International shipping', p: 'We ship to 120+ countries. Rates calculated at checkout. Free standard shipping on international orders over $100.' },
   { h: 'Tracking', p: 'Every order ships with full tracking. You\'ll receive a tracking number via email as soon as your kit leaves our warehouse.' },
   { h: 'Customs & duties', p: 'International orders may be subject to import duties. These are the responsibility of the recipient.' },
@@ -4153,7 +4315,7 @@ const Footer = () => {
               <li><button onClick={() => navigate('shop', { filter: { wc2026: true } })} className="hover:text-lime-400">World Cup 2026</button></li>
               <li><button onClick={() => navigate('shop', { filter: { isNew: true } })} className="hover:text-lime-400">New Arrivals</button></li>
               <li><button onClick={() => navigate('shop', { filter: { isBest: true } })} className="hover:text-lime-400">Best Sellers</button></li>
-              <li><button onClick={() => navigate('shop', { filter: { type: 'Retro' } })} className="hover:text-lime-400">Retro</button></li>
+              <li><button onClick={() => navigate('shop', { filter: { retro: true } })} className="hover:text-lime-400">Retro</button></li>
               <li><button onClick={() => navigate('shop', { filter: { league: 'International' } })} className="hover:text-lime-400">National Teams</button></li>
             </ul>
           </div>
