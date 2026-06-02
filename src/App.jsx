@@ -1443,38 +1443,19 @@ const Hero = () => {
 
 const TrendingClubs = () => {
   const { navigate } = useStore();
-  // Find the specific 25/26 Home Jersey for each trending club
-  const trending = useMemo(() => {
-    const trendingClubNames = ['Real Madrid', 'Barcelona', 'Manchester City', 'Liverpool', 'Paris Saint-Germain', 'Bayern Munich', 'Manchester United', 'Inter Miami'];
-    return trendingClubNames.map(name => {
-      // STRICT: must be Home jersey for THIS club, current season, no special editions
-      const candidates = PRODUCTS.filter(p =>
-        p.clubName === name &&
-        p.variant === 'Home' &&
-        !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
-        !p.isTraining && !p.isGoalkeeper && !p.isSpecial && !p.isLongSleeve &&
-        // Must be 25/26 season (or 2025/26 long form)
-        (p.season === '25/26' || p.season === '2025/26' || p.season === '2025/2026')
-      );
-      // If no 25/26, fall back to most recent current-season match
-      let product = candidates[0];
-      if (!product) {
-        const fallback = PRODUCTS.filter(p =>
-          p.clubName === name &&
-          p.variant === 'Home' &&
-          !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
-          !p.isTraining && !p.isGoalkeeper && !p.isSpecial && !p.isLongSleeve
-        );
-        fallback.sort((a, b) => {
-          const ay = parseInt((a.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
-          const by = parseInt((b.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
-          return by - ay;
-        });
-        product = fallback[0];
-      }
-      return product ? { name, product, color: product.color, league: product.league } : null;
-    }).filter(Boolean);
-  }, []);
+  // The 8 trending clubs — displayed as club badge + name (no jersey images).
+  // Badge assets served from a public football-crest CDN. If a badge fails to load,
+  // a lettered fallback tile renders instead.
+  const trendingClubs = [
+    { name: 'Real Madrid', league: 'La Liga', badge: 'https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg' },
+    { name: 'Barcelona', league: 'La Liga', badge: 'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg' },
+    { name: 'Manchester City', league: 'Premier League', badge: 'https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg' },
+    { name: 'Liverpool', league: 'Premier League', badge: 'https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg' },
+    { name: 'Paris Saint-Germain', league: 'Ligue 1', badge: 'https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg' },
+    { name: 'Bayern Munich', league: 'Bundesliga', badge: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg' },
+    { name: 'Manchester United', league: 'Premier League', badge: 'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg' },
+    { name: 'Arsenal', league: 'Premier League', badge: 'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg' },
+  ];
 
   return (
     <section className="bg-zinc-950 py-16 md:py-24 border-y border-white/5">
@@ -1489,7 +1470,7 @@ const TrendingClubs = () => {
           </button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
-          {trending.map((club, i) => (
+          {trendingClubs.map((club, i) => (
             <motion.button
               key={club.name}
               initial={{ opacity: 0, y: 20 }}
@@ -1497,24 +1478,23 @@ const TrendingClubs = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.05 }}
               onClick={() => navigate('shop', { filter: { clubName: club.name } })}
-              className="group relative aspect-square overflow-hidden bg-zinc-900 rounded-sm"
-              style={{ backgroundColor: `${club.color}15` }}
+              className="group relative aspect-square overflow-hidden bg-zinc-900 rounded-sm border border-white/5 hover:border-lime-400/40 transition-colors flex flex-col items-center justify-center p-6"
             >
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex-1 flex items-center justify-center w-full">
                 <img
-                  src={club.product.image}
-                  alt={club.name}
+                  src={club.badge}
+                  alt={`${club.name} badge`}
                   loading="lazy"
-                  className="w-2/3 h-2/3 object-contain group-hover:scale-110 transition-transform duration-500"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
+                  className="w-20 h-20 md:w-24 md:h-24 object-contain group-hover:scale-110 transition-transform duration-500"
                 />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
-                <div className="text-[10px] uppercase tracking-[0.3em] text-white/60 mb-1">{club.league}</div>
-                <div className="text-white font-bold text-sm md:text-lg leading-tight">{club.name}</div>
-                <div className="mt-2 flex items-center gap-1 text-lime-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                  Shop now <ArrowUpRight className="w-3 h-3" />
+                <div style={{ display: 'none' }} className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white/10 items-center justify-center text-white font-black text-2xl">
+                  {club.name.split(' ').map(w => w[0]).join('').slice(0, 2)}
                 </div>
+              </div>
+              <div className="text-center mt-4">
+                <div className="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-1">{club.league}</div>
+                <div className="text-white font-bold text-sm md:text-base leading-tight">{club.name}</div>
               </div>
             </motion.button>
           ))}
@@ -1535,15 +1515,23 @@ const NewArrivals = () => {
   const { navigate, catalogLoaded } = useStore();
   // 26/27 jerseys ONLY (no fallback) — per New Arrivals = 26/27 rule
   const items = useMemo(() => {
-    const is2627 = (s) => s === '26/27' || s === '2026/27' || s === '2026/2027' || s === '2026';
+    const is2627exact = (s) => s === '26/27' || s === '2026/27' || s === '2026/2027';
+    const is2026 = (s) => s === '2026';
     const picked = [];
-    // Prefer major clubs' 26/27 home first for visual appeal
+    // Prefer major clubs' 26/27 home (exact 26/27 first, then plain 2026)
     for (const clubName of NEW_ARRIVAL_CLUBS) {
-      const match = PRODUCTS.find(p =>
+      let match = PRODUCTS.find(p =>
         p.clubName === clubName && p.variant === 'Home' &&
         !p.isRetro && !p.isKids && !p.isTraining && !p.isGoalkeeper &&
-        !p.isSpecial && !p.isJacket && is2627(p.season)
+        !p.isSpecial && !p.isJacket && is2627exact(p.season)
       );
+      if (!match) {
+        match = PRODUCTS.find(p =>
+          p.clubName === clubName && p.variant === 'Home' &&
+          !p.isRetro && !p.isKids && !p.isTraining && !p.isGoalkeeper &&
+          !p.isSpecial && !p.isJacket && is2026(p.season)
+        );
+      }
       if (match) picked.push(match);
       if (picked.length >= 8) break;
     }
@@ -1553,8 +1541,8 @@ const NewArrivals = () => {
       for (const p of PRODUCTS) {
         if (picked.length >= 8) break;
         if (ids.has(p.id)) continue;
-        if (is2627(p.season) && !p.isRetro && !p.isKids && !p.isTraining &&
-            !p.isGoalkeeper && !p.isJacket && p.variant === 'Home') {
+        if ((is2627exact(p.season) || is2026(p.season)) && !p.isRetro && !p.isKids && !p.isTraining &&
+            !p.isGoalkeeper && !p.isJacket && !p.isSpecial && p.variant === 'Home') {
           picked.push(p); ids.add(p.id);
         }
       }
@@ -1841,8 +1829,8 @@ const RetroSection = () => {
             Retro <span className="italic font-serif font-normal text-amber-500">classics</span>.
           </h2>
           <p className="mt-6 text-white/60 max-w-md">
-            Iconic kits from the eras that defined football. Maradona '86. Ronaldinho's Barça. Istanbul 2005.
-            Reborn for a new generation.
+            Relive football's greatest moments. From Zidane's France and Ronaldo's Brazil to Messi's Barcelona
+            and the Galácticos era of Real Madrid — the jerseys that defined generations, won trophies, and became legends.
           </p>
           <button onClick={() => navigate('shop', { filter: { retro: true } })}
             className="mt-7 bg-amber-500 hover:bg-amber-400 text-black px-7 py-4 text-sm font-bold uppercase tracking-widest inline-flex items-center gap-2">
@@ -1986,47 +1974,30 @@ const HomePage = () => (
 // ---------- WORLD CUP 2026 SECTION ----------------------------------------
 // 2026 FIFA World Cup — only teams that are actually qualified or strongly trending
 // Italy DID NOT qualify (failed to qualify in past two cycles too) — removed
+// Road To 26 — ONLY nations with a valid 2026 WC home jersey actually in inventory.
+// Each entry pins the exact product id. Add more here as new WC kits are imported.
 const WORLD_CUP_TEAMS = [
-  { name: 'Argentina', emoji: '🇦🇷' },
-  { name: 'Brazil', emoji: '🇧🇷' },
-  { name: 'France', emoji: '🇫🇷' },
-  { name: 'England', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { name: 'Portugal', emoji: '🇵🇹' },
-  { name: 'Spain', emoji: '🇪🇸' },
-  { name: 'Germany', emoji: '🇩🇪' },
-  { name: 'Netherlands', emoji: '🇳🇱' },
-  { name: 'Mexico', emoji: '🇲🇽' },
-  { name: 'USA', emoji: '🇺🇸' },
-  { name: 'Canada', emoji: '🇨🇦' },
-  { name: 'Morocco', emoji: '🇲🇦' },
-  { name: 'Japan', emoji: '🇯🇵' },
-  { name: 'Croatia', emoji: '🇭🇷' },
-  { name: 'Belgium', emoji: '🇧🇪' },
-  { name: 'South Korea', emoji: '🇰🇷' },
+  { name: 'Mexico', emoji: '🇲🇽', productId: 'r1634' },
+  { name: 'Portugal', emoji: '🇵🇹', productId: 'r1796' },
+  { name: 'Senegal', emoji: '🇸🇳', productId: 'r1812' },
+  { name: 'Morocco', emoji: '🇲🇦', productId: 'r4676' },
+  { name: 'France', emoji: '🇫🇷', productId: 'r3864' },
+  { name: 'Canada', emoji: '🇨🇦', productId: 'r3706' },
+  { name: 'Ivory Coast', emoji: '🇨🇮', productId: 'r1622' },
+  { name: 'Belgium', emoji: '🇧🇪', productId: 'r762' },
+  { name: 'Saudi Arabia', emoji: '🇸🇦', productId: 'r3938' },
+  { name: 'Argentina', emoji: '🇦🇷', productId: 'r3959' },
+  { name: 'Colombia', emoji: '🇨🇴', productId: 'r799' },
 ];
 
 const WorldCup2026 = () => {
   const { navigate, catalogLoaded } = useStore();
-  // For each nation, find a 25/26 or recent home jersey
+  // Driven ENTIRELY by inventory: only show a nation if its pinned product exists.
   const items = useMemo(() => {
     const picked = [];
     for (const team of WORLD_CUP_TEAMS) {
-      const candidates = PRODUCTS.filter(p =>
-        p.clubName === team.name &&
-        p.variant === 'Home' &&
-        !p.isRetro && !p.isKids && !p.isShorts && !p.isTracksuit &&
-        !p.isTraining && !p.isGoalkeeper && !p.isLongSleeve
-      );
-      // Sort by recency
-      candidates.sort((a, b) => {
-        const ay = parseInt((a.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
-        const by = parseInt((b.season || '0').replace(/\D/g, '').slice(0, 4)) || 0;
-        return by - ay;
-      });
-      if (candidates.length > 0) {
-        picked.push({ ...team, product: candidates[0] });
-      }
-      if (picked.length >= 12) break;
+      const product = PRODUCTS.find(p => p.id === team.productId);
+      if (product) picked.push({ ...team, product });
     }
     return picked;
   }, [catalogLoaded]);
@@ -2347,79 +2318,104 @@ const ShopPage = () => {
     return m;
   }, [catalogLoaded]);
 
+  // Top-5 leagues always first, then alphabetical
+  const LEAGUE_PRIORITY = ['Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1'];
+  const orderLeagues = (leagues) => {
+    const top = LEAGUE_PRIORITY.filter(l => leagues.includes(l));
+    const rest = leagues.filter(l => l && !LEAGUE_PRIORITY.includes(l) && l !== 'International').sort();
+    return [...top, ...rest];
+  };
+
+  // The set of products relevant to the CURRENT section (for context-aware counts)
+  const sectionProducts = useMemo(() => {
+    const isSeasonRetro = (p) => {
+      const y = getSeasonStartYear(p.season);
+      return y != null && y <= 2017;
+    };
+    if (filters.icon) return PRODUCTS.filter(p => p.isIcon);
+    if (filters.special) return PRODUCTS.filter(p => p.isSpecial && !p.isIcon);
+    if (filters.jacket) return PRODUCTS.filter(p => p.isJacket && !p.isIcon);
+    if (filters.retroClub) return PRODUCTS.filter(p => isSeasonRetro(p) && p.league !== 'International' && !p.isIcon);
+    if (filters.retroNational) return PRODUCTS.filter(p => isSeasonRetro(p) && p.league === 'International' && !p.isIcon);
+    if (filters.retro) return PRODUCTS.filter(p => isSeasonRetro(p) && !p.isIcon);
+    if (filters.league === 'International') return PRODUCTS.filter(p => p.league === 'International' && !p.isIcon);
+    // normal clubs: current (18/19+) non-icon
+    return PRODUCTS.filter(p => !p.isIcon && getSeasonStartYear(p.season) >= 2018 && !p.isJacket && !p.isSpecial);
+  }, [filters.icon, filters.special, filters.jacket, filters.retro, filters.retroClub, filters.retroNational, filters.league, catalogLoaded]);
+
+  // Context-aware club/nation counts (only within this section)
+  const sectionClubCounts = useMemo(() => {
+    const m = {};
+    sectionProducts.forEach(p => { if (p.clubName) m[p.clubName] = (m[p.clubName] || 0) + 1; });
+    return m;
+  }, [sectionProducts]);
+  const sectionLeagueCounts = useMemo(() => {
+    const m = {};
+    sectionProducts.forEach(p => { if (p.league) m[p.league] = (m[p.league] || 0) + 1; });
+    return m;
+  }, [sectionProducts]);
+
+  // Which "mode" governs which filters appear
+  const isIconView = !!filters.icon;
+  const isNationalView = filters.league === 'International' || filters.retroNational;
+  const isRetroView = !!(filters.retro || filters.retroClub || filters.retroNational);
+  const isSpecialView = !!filters.special;
+  const isJacketView = !!filters.jacket;
+
   const FilterPanel = () => (
     <div className="space-y-6">
-      <div>
-        <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">League</div>
-        <div className="space-y-2">
-          {['', ...Array.from(new Set(PRODUCTS.map(p => p.league))).sort()].map(l => (
-            <button key={l || 'all'} onClick={() => navigate('shop', { filter: l ? { league: l } : {} })}
-              className={`flex justify-between items-center w-full text-left text-sm py-1 ${filters.league === l ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
-              <span>{l || 'All Leagues'}</span>
-              {l && <span className="text-white/30 text-xs">{leagueCounts[l] || 0}</span>}
-            </button>
-          ))}
+      {/* LEAGUE — shown for normal clubs + retro-club, NOT for national/icon/special/jacket views */}
+      {!isNationalView && !isIconView && !isSpecialView && !isJacketView && !filters.retroNational && (
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">League</div>
+          <div className="space-y-2">
+            {['', ...orderLeagues(Array.from(new Set(sectionProducts.map(p => p.league))))].map(l => (
+              <button key={l || 'all'} onClick={() => {
+                const f = {};
+                if (filters.retro || filters.retroClub) f.retroClub = true;
+                if (l) f.league = l;
+                navigate('shop', { filter: f });
+              }}
+                className={`flex justify-between items-center w-full text-left text-sm py-1 ${filters.league === l ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
+                <span>{l || 'All Leagues'}</span>
+                {l && <span className="text-white/30 text-xs">{sectionLeagueCounts[l] || 0}</span>}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="border-t border-white/5 pt-6">
-        <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">Type</div>
-        <div className="space-y-2">
-          {[
-            { val: '', label: 'All Types' },
-            { val: 'Jersey', label: 'Match Jerseys' },
-            { val: 'Retro', label: 'Retro' },
-            { val: 'Training Kit', label: 'Training Kit' },
-            { val: 'Tracksuit', label: 'Tracksuit' },
-            { val: 'Goalkeeper', label: 'Goalkeeper' },
-            { val: 'Long Sleeve', label: 'Long Sleeve' },
-          ].map(opt => (
-            <button key={opt.val || 'all'} onClick={() => {
-              const f = {};
-              if (filters.league) f.league = filters.league;
-              if (opt.val) f.type = opt.val;
-              navigate('shop', { filter: f });
-            }}
-              className={`block w-full text-left text-sm py-1 ${filters.type === opt.val ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t border-white/5 pt-6">
+      {/* CLUB / NATION — context-aware list (only entities that exist in this section) */}
+      <div className={`${(!isNationalView && !isIconView && !isSpecialView && !isJacketView) ? 'border-t border-white/5 pt-6' : ''}`}>
         <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">
-          {filters.league === 'International' ? 'Nation' : 'Club'}
+          {isNationalView ? 'Nation' : 'Club'}
         </div>
-        <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+        <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
           {(() => {
-            // When in National Teams view, list nations; otherwise list clubs
-            const isNational = filters.league === 'International' || filters.retroNational;
-            const names = Array.from(new Set(
-              PRODUCTS
-                .filter(p => isNational ? p.league === 'International' : true)
-                .map(p => p.clubName)
-            )).filter(Boolean).sort();
+            const names = Object.keys(sectionClubCounts).sort();
             return ['', ...names].map(c => (
               <button key={c || 'all'} onClick={() => {
-                // Fresh navigation: keep league context, set/clear the club, drop everything else
                 const f = {};
                 if (filters.league) f.league = filters.league;
                 if (filters.retro) f.retro = true;
                 if (filters.retroClub) f.retroClub = true;
                 if (filters.retroNational) f.retroNational = true;
+                if (filters.special) f.special = true;
+                if (filters.jacket) f.jacket = true;
+                if (filters.icon) f.icon = true;
                 if (c) f.clubName = c;
                 navigate('shop', { filter: f });
               }}
                 className={`flex justify-between items-center w-full text-left text-sm py-1 ${filters.clubName === c ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
-                <span className="truncate">{c || (isNational ? 'All Nations' : 'All Clubs')}</span>
-                {c && <span className="text-white/30 text-xs flex-shrink-0 ml-2">{clubCounts[c] || 0}</span>}
+                <span className="truncate">{c || (isNationalView ? 'All Nations' : 'All Clubs')}</span>
+                {c && <span className="text-white/30 text-xs flex-shrink-0 ml-2">{sectionClubCounts[c] || 0}</span>}
               </button>
             ));
           })()}
         </div>
       </div>
 
+      {/* PRICE — always available */}
       <div className="border-t border-white/5 pt-6">
         <div className="flex justify-between text-xs uppercase tracking-[0.2em] text-white/40 mb-3">
           <span>Max Price</span>
@@ -2430,6 +2426,7 @@ const ShopPage = () => {
           className="w-full accent-lime-400" />
       </div>
 
+      {/* NEW ARRIVALS + BEST SELLERS — always available */}
       <div className="border-t border-white/5 pt-6 space-y-3">
         {[
           { key: 'isNew', label: 'New Arrivals' },
@@ -2541,6 +2538,27 @@ const ShopPage = () => {
       </div>
 
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-8">
+        {/* RETRO LANDING — two choices only, shown when entering Retro with no sub-selection */}
+        {filters.retro && !filters.retroClub && !filters.retroNational && !filters.clubName && !filters.league ? (
+          <div className="max-w-3xl mx-auto py-8">
+            <div className="grid md:grid-cols-2 gap-5">
+              <button onClick={() => navigate('shop', { filter: { retroClub: true } })}
+                className="group relative overflow-hidden border-2 border-white/10 hover:border-lime-400 bg-zinc-950 p-10 text-left transition-colors">
+                <div className="text-xs uppercase tracking-[0.3em] text-amber-400 mb-3">The vault</div>
+                <h2 className="text-3xl font-black uppercase text-white tracking-tight mb-2">Retro Club Jerseys</h2>
+                <p className="text-white/50 text-sm">Classic kits from the world's greatest clubs — by league.</p>
+                <ChevronRight className="w-6 h-6 text-lime-400 mt-6 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button onClick={() => navigate('shop', { filter: { retroNational: true } })}
+                className="group relative overflow-hidden border-2 border-white/10 hover:border-lime-400 bg-zinc-950 p-10 text-left transition-colors">
+                <div className="text-xs uppercase tracking-[0.3em] text-amber-400 mb-3">International</div>
+                <h2 className="text-3xl font-black uppercase text-white tracking-tight mb-2">Retro National Teams</h2>
+                <p className="text-white/50 text-sm">Iconic international shirts — by nation.</p>
+                <ChevronRight className="w-6 h-6 text-lime-400 mt-6 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="flex gap-8">
           {/* Desktop filter sidebar */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -2622,6 +2640,7 @@ const ShopPage = () => {
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Mobile filter drawer */}
@@ -3889,13 +3908,22 @@ const ClubsPage = () => {
       }
     }
     // Convert to array, sort clubs ALPHABETICALLY within each league
+    const TOP5 = ['Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1'];
     const leagues = Object.entries(byLeague)
       .map(([league, clubsMap]) => ({
         name: league,
         clubs: Array.from(clubsMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
         totalProducts: Array.from(clubsMap.values()).reduce((s, c) => s + c.count, 0),
       }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => {
+        const ai = TOP5.indexOf(a.name), bi = TOP5.indexOf(b.name);
+        if (ai !== -1 || bi !== -1) {
+          if (ai === -1) return 1;
+          if (bi === -1) return -1;
+          return ai - bi;
+        }
+        return a.name.localeCompare(b.name);
+      });
     return leagues;
   }, [catalogLoaded]);
 
