@@ -2205,26 +2205,29 @@ const ShopPage = () => {
     const inIcons = !!filters.icon;
 
     let result = PRODUCTS.filter(p => {
+      // ---- ICON ISOLATION (fix 1) ----
+      // Icons ONLY appear in the Iconic Players collection — and ALWAYS appear there
+      // regardless of the season/retro status of their source jersey.
+      if (inIcons) return p.isIcon;   // icon view shows every icon, nothing else
+      if (p.isIcon) return false;     // icons never leak into other views
+
       // ---- GLOBAL SECTION ISOLATION ----
-      // Icon jerseys ONLY appear in the Iconic Players collection
-      if (p.isIcon && !inIcons) return false;
-      if (inIcons && !p.isIcon) return false;
       // Jackets ONLY appear in the Jackets collection
       if (p.isJacket && !inJackets) return false;
       // Special editions ONLY appear in Special Editions
       if (p.isSpecial && !inSpecial && !inRetro) return false;
 
-      // ---- RETRO vs CURRENT STRUCTURE (item 3) ----
-      // Retro = isRetro flag OR season older than 18/19
-      const productIsRetro = p.isRetro || !isCurrentSeason(p);
+      // ---- RETRO vs CURRENT STRUCTURE — SEASON ONLY (fix 2) ----
+      // A product is retro ONLY if its season is 17/18 or older. The word "Retro"
+      // in the title and the isRetro flag are IGNORED for placement.
+      const productIsRetro = !isCurrentSeason(p);
       if (inRetro) {
-        // In a Retro view: only show retro products
         if (!productIsRetro) return false;
-        // Retro Club vs National split (item 2)
+        // Retro Club vs National split
         if (filters.retroClub && p.league === 'International') return false;
         if (filters.retroNational && p.league !== 'International') return false;
       } else {
-        // In normal browsing (clubs/national/new/etc): hide retro/old jerseys entirely
+        // Normal browsing (clubs/national/new): hide only true retros (17/18 & older)
         if (productIsRetro) return false;
       }
 
@@ -2350,7 +2353,7 @@ const ShopPage = () => {
         <div className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">League</div>
         <div className="space-y-2">
           {['', ...Array.from(new Set(PRODUCTS.map(p => p.league))).sort()].map(l => (
-            <button key={l || 'all'} onClick={() => setFilters(f => ({ ...f, league: l }))}
+            <button key={l || 'all'} onClick={() => navigate('shop', { filter: l ? { league: l } : {} })}
               className={`flex justify-between items-center w-full text-left text-sm py-1 ${filters.league === l ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
               <span>{l || 'All Leagues'}</span>
               {l && <span className="text-white/30 text-xs">{leagueCounts[l] || 0}</span>}
@@ -2371,7 +2374,12 @@ const ShopPage = () => {
             { val: 'Goalkeeper', label: 'Goalkeeper' },
             { val: 'Long Sleeve', label: 'Long Sleeve' },
           ].map(opt => (
-            <button key={opt.val || 'all'} onClick={() => setFilters(f => ({ ...f, type: opt.val }))}
+            <button key={opt.val || 'all'} onClick={() => {
+              const f = {};
+              if (filters.league) f.league = filters.league;
+              if (opt.val) f.type = opt.val;
+              navigate('shop', { filter: f });
+            }}
               className={`block w-full text-left text-sm py-1 ${filters.type === opt.val ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
               {opt.label}
             </button>
@@ -2393,7 +2401,16 @@ const ShopPage = () => {
                 .map(p => p.clubName)
             )).filter(Boolean).sort();
             return ['', ...names].map(c => (
-              <button key={c || 'all'} onClick={() => setFilters(f => ({ ...f, clubName: c }))}
+              <button key={c || 'all'} onClick={() => {
+                // Fresh navigation: keep league context, set/clear the club, drop everything else
+                const f = {};
+                if (filters.league) f.league = filters.league;
+                if (filters.retro) f.retro = true;
+                if (filters.retroClub) f.retroClub = true;
+                if (filters.retroNational) f.retroNational = true;
+                if (c) f.clubName = c;
+                navigate('shop', { filter: f });
+              }}
                 className={`flex justify-between items-center w-full text-left text-sm py-1 ${filters.clubName === c ? 'text-lime-400 font-semibold' : 'text-white/70 hover:text-white'}`}>
                 <span className="truncate">{c || (isNational ? 'All Nations' : 'All Clubs')}</span>
                 {c && <span className="text-white/30 text-xs flex-shrink-0 ml-2">{clubCounts[c] || 0}</span>}
@@ -3296,19 +3313,36 @@ const CheckoutPage = () => {
   const [cryptoCurrency, setCryptoCurrency] = useState('ETH'); // ETH | BTC | USDC
   const [submitting, setSubmitting] = useState(false);
 
-  // Location-based shipping rate ($5-15 by region). Free over $99.
+  // Location-based shipping — distance from CHINA (ships from China).
+  // Closer to China = cheaper. Free over $99.
   const shippingRate = (() => {
     const c = (info.country || '').toLowerCase().trim();
-    if (['canada','ca'].includes(c)) return 5;
-    if (['united states','usa','us','united states of america'].includes(c)) return 7;
-    if (['united kingdom','uk','england','scotland','wales','ireland','france','germany','spain','italy','netherlands','belgium','portugal'].includes(c)) return 10;
-    if (['australia','new zealand','japan','south korea','singapore','uae','united arab emirates','saudi arabia'].includes(c)) return 13;
-    if (!c) return 9; // default before country entered
-    return 15; // rest of world
+    // East/SE Asia — closest
+    if (['china','japan','south korea','korea','singapore','malaysia','thailand','vietnam','philippines','indonesia','hong kong','taiwan'].includes(c)) return 5;
+    // Middle East / South Asia / Oceania
+    if (['uae','united arab emirates','saudi arabia','qatar','india','pakistan','australia','new zealand','turkey'].includes(c)) return 8;
+    // Europe
+    if (['united kingdom','uk','england','scotland','wales','ireland','france','germany','spain','italy','netherlands','belgium','portugal','switzerland','sweden','norway','denmark','poland','austria','greece'].includes(c)) return 10;
+    // North America — far from China
+    if (['united states','usa','us','united states of america','canada','ca','mexico'].includes(c)) return 13;
+    // South America / Africa — farthest
+    if (['brazil','argentina','chile','colombia','peru','uruguay','south africa','nigeria','egypt','morocco','ghana','senegal'].includes(c)) return 15;
+    if (!c) return 10; // default before country entered
+    return 13; // unlisted → treat as far
   })();
   const shippingCost = subtotal >= 99 ? 0 : shippingRate;
   const tax = (subtotal - discount.applied) * 0.13;
   const total = subtotal + shippingCost + tax - discount.applied;
+
+  // Step 1 validity — Continue button stays disabled until ALL fields valid
+  const step1Valid = (() => {
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(info.email || '');
+    const phoneOk = /^[\d\s()+\-]{7,}$/.test(info.phone || '');
+    return emailOk && phoneOk &&
+      (info.firstName || '').trim() && (info.lastName || '').trim() &&
+      (info.address || '').trim() && (info.city || '').trim() &&
+      (info.zip || '').trim() && (info.country || '').trim();
+  })();
 
   const applyDiscount = () => {
     const code = discountInput.toUpperCase();
@@ -3575,9 +3609,9 @@ const CheckoutPage = () => {
                     className="w-full bg-zinc-950 border border-white/10 text-white px-4 py-3 outline-none focus:border-lime-400" />
                 </div>
               </div>
-              <button onClick={() => setStep(2)}
-                className="w-full bg-lime-400 hover:bg-white text-black py-4 font-bold uppercase tracking-widest mt-4">
-                Continue to shipping
+              <button onClick={() => setStep(2)} disabled={!step1Valid}
+                className="w-full bg-lime-400 hover:bg-white text-black py-4 font-bold uppercase tracking-widest mt-4 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-lime-400">
+                {step1Valid ? 'Continue to shipping' : 'Complete all fields to continue'}
               </button>
             </div>
           )}
