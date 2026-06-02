@@ -2101,6 +2101,34 @@ const TrustBar = () => (
   </section>
 );
 
+// ---------- SELECTION GRID (League / Club / Nation chooser) -----------------
+const SelectionGrid = ({ title, eyebrow, items, onPick, backTo }) => {
+  const { navigate } = useStore();
+  return (
+    <div className="max-w-[1400px] mx-auto py-4">
+      {backTo && (
+        <button onClick={() => navigate('shop', { filter: backTo })}
+          className="flex items-center gap-1 text-white/50 hover:text-lime-400 text-xs uppercase tracking-widest mb-6">
+          <ChevronLeft className="w-3 h-3" /> Back
+        </button>
+      )}
+      <div className="mb-8">
+        {eyebrow && <div className="text-xs uppercase tracking-[0.3em] text-amber-400 mb-2">{eyebrow}</div>}
+        <h1 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tighter">{title}</h1>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        {items.map(it => (
+          <button key={it.key} onClick={() => onPick(it.key)}
+            className="group border border-white/10 hover:border-lime-400 bg-zinc-950 hover:bg-zinc-900 p-6 text-left transition-colors flex items-center justify-between">
+            <span className="text-white font-bold text-sm md:text-base">{it.label}</span>
+            <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-lime-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ---------- SHOP PAGE -------------------------------------------------------
 const ShopPage = () => {
   const { route, catalogLoaded, navigate } = useStore();
@@ -2233,16 +2261,10 @@ const ShopPage = () => {
       }
       if (filters.isBest && !p.isBest) return false;
 
-      // World Cup 2026 filter — qualified national teams only, current/upcoming home kits
+      // World Cup 2026 — ONLY the approved pinned products (same as Road To 26)
       if (filters.wc2026) {
-        const wcTeams = ['Argentina','Brazil','France','England','Portugal','Spain','Germany','Netherlands','Mexico','USA','Canada','Morocco','Japan','Croatia','Belgium','South Korea','Senegal','Australia','Switzerland','Denmark','Uruguay','Colombia','Ecuador','Norway'];
-        if (!wcTeams.includes(p.clubName)) return false;
-        if (p.variant !== 'Home') return false;
-        if (p.isRetro || p.isKids || p.isTraining || p.isGoalkeeper || p.isSpecial || p.isJacket) return false;
-        // 26/27 (or 2026) home kits only
-        const s = p.season || '';
-        const ok = s === '26/27' || s === '2026/27' || s === '2026/2027' || s === '2026';
-        if (!ok) return false;
+        const WC_PRODUCT_IDS = ['r1634','r1796','r1812','r4676','r3864','r3706','r1622','r762','r3938','r3959','r799'];
+        if (!WC_PRODUCT_IDS.includes(p.id)) return false;
       }
 
       // Special Editions filter
@@ -2285,8 +2307,15 @@ const ShopPage = () => {
     const variantOrder = { 'Home': 0, 'Away': 1, 'Third': 2, 'Fourth': 3, 'Goalkeeper': 4 };
 
     if (sort === 'featured') {
+      const iconView = !!filters.icon;
       result.sort((a, b) => {
-        // Current jerseys before retro
+        // Icon collection: pure chronological (newest season → oldest), ignore retro flag
+        if (iconView) {
+          const ay = seasonStartYear(a.season), by = seasonStartYear(b.season);
+          if (ay !== by) return by - ay;
+          return 0;
+        }
+        // Everywhere else: current jerseys before retro
         if (!!a.isRetro !== !!b.isRetro) return a.isRetro ? 1 : -1;
         // Newest season first
         const ay = seasonStartYear(a.season), by = seasonStartYear(b.season);
@@ -2539,26 +2568,90 @@ const ShopPage = () => {
 
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-8">
         {/* RETRO LANDING — two choices only, shown when entering Retro with no sub-selection */}
-        {filters.retro && !filters.retroClub && !filters.retroNational && !filters.clubName && !filters.league ? (
-          <div className="max-w-3xl mx-auto py-8">
-            <div className="grid md:grid-cols-2 gap-5">
-              <button onClick={() => navigate('shop', { filter: { retroClub: true } })}
-                className="group relative overflow-hidden border-2 border-white/10 hover:border-lime-400 bg-zinc-950 p-10 text-left transition-colors">
-                <div className="text-xs uppercase tracking-[0.3em] text-amber-400 mb-3">The vault</div>
-                <h2 className="text-3xl font-black uppercase text-white tracking-tight mb-2">Retro Club Jerseys</h2>
-                <p className="text-white/50 text-sm">Classic kits from the world's greatest clubs — by league.</p>
-                <ChevronRight className="w-6 h-6 text-lime-400 mt-6 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button onClick={() => navigate('shop', { filter: { retroNational: true } })}
-                className="group relative overflow-hidden border-2 border-white/10 hover:border-lime-400 bg-zinc-950 p-10 text-left transition-colors">
-                <div className="text-xs uppercase tracking-[0.3em] text-amber-400 mb-3">International</div>
-                <h2 className="text-3xl font-black uppercase text-white tracking-tight mb-2">Retro National Teams</h2>
-                <p className="text-white/50 text-sm">Iconic international shirts — by nation.</p>
-                <ChevronRight className="w-6 h-6 text-lime-400 mt-6 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </div>
-        ) : (
+        {(() => {
+          // ===== STEP-BASED NAVIGATION SCREENS =====
+          // Decide whether to show a SELECTION screen (leagues/clubs/nations) instead of jerseys.
+          const TOP5 = ['Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1'];
+          const orderLeaguesLocal = (ls) => {
+            const top = TOP5.filter(l => ls.includes(l));
+            const rest = ls.filter(l => l && !TOP5.includes(l) && l !== 'International').sort();
+            return [...top, ...rest];
+          };
+          const isSeasonRetro = (p) => { const y = getSeasonStartYear(p.season); return y != null && y <= 2017; };
+
+          // 1) RETRO ROOT — two cards
+          if (filters.retro && !filters.retroClub && !filters.retroNational && !filters.clubName && !filters.league) {
+            return (
+              <div className="max-w-3xl mx-auto py-8">
+                <div className="grid md:grid-cols-2 gap-5">
+                  <button onClick={() => navigate('shop', { filter: { retroClub: true } })}
+                    className="group border-2 border-white/10 hover:border-lime-400 bg-zinc-950 p-10 text-left transition-colors">
+                    <div className="text-xs uppercase tracking-[0.3em] text-amber-400 mb-3">The vault</div>
+                    <h2 className="text-3xl font-black uppercase text-white tracking-tight mb-2">Retro Club Jerseys</h2>
+                    <p className="text-white/50 text-sm">Classic kits from the world's greatest clubs — by league.</p>
+                    <ChevronRight className="w-6 h-6 text-lime-400 mt-6 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <button onClick={() => navigate('shop', { filter: { retroNational: true } })}
+                    className="group border-2 border-white/10 hover:border-lime-400 bg-zinc-950 p-10 text-left transition-colors">
+                    <div className="text-xs uppercase tracking-[0.3em] text-amber-400 mb-3">International</div>
+                    <h2 className="text-3xl font-black uppercase text-white tracking-tight mb-2">Retro International Jerseys</h2>
+                    <p className="text-white/50 text-sm">Iconic international shirts — by nation.</p>
+                    <ChevronRight className="w-6 h-6 text-lime-400 mt-6 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          // 2) RETRO CLUB — no league chosen yet → show LEAGUE grid
+          if (filters.retroClub && !filters.league && !filters.clubName) {
+            const leaguesWithRetro = orderLeaguesLocal(Array.from(new Set(
+              PRODUCTS.filter(p => isSeasonRetro(p) && p.league !== 'International' && !p.isIcon).map(p => p.league)
+            )));
+            return (
+              <SelectionGrid title="Retro · Choose a League" eyebrow="Retro Clubs"
+                items={leaguesWithRetro.map(l => ({ key: l, label: l }))}
+                onPick={(l) => navigate('shop', { filter: { retroClub: true, league: l } })} />
+            );
+          }
+          // 2b) RETRO CLUB — league chosen, no club yet → show CLUB grid
+          if (filters.retroClub && filters.league && !filters.clubName) {
+            const clubs = Array.from(new Set(
+              PRODUCTS.filter(p => isSeasonRetro(p) && p.league === filters.league && !p.isIcon).map(p => p.clubName)
+            )).filter(Boolean).sort();
+            return (
+              <SelectionGrid title={`Retro · ${filters.league}`} eyebrow="Choose a Club" backTo={{ retroClub: true }}
+                items={clubs.map(c => ({ key: c, label: c }))}
+                onPick={(c) => navigate('shop', { filter: { retroClub: true, league: filters.league, clubName: c } })} />
+            );
+          }
+
+          // 3) RETRO INTERNATIONAL — no nation chosen yet → show NATION grid
+          if (filters.retroNational && !filters.clubName) {
+            const nations = Array.from(new Set(
+              PRODUCTS.filter(p => isSeasonRetro(p) && p.league === 'International' && !p.isIcon).map(p => p.clubName)
+            )).filter(Boolean).sort();
+            return (
+              <SelectionGrid title="Retro · Choose a Nation" eyebrow="Retro International"
+                items={nations.map(n => ({ key: n, label: n }))}
+                onPick={(n) => navigate('shop', { filter: { retroNational: true, clubName: n } })} />
+            );
+          }
+
+          // 4) NATIONAL TEAMS — no nation chosen yet → show NATION grid
+          if (filters.league === 'International' && !filters.clubName) {
+            const nations = Array.from(new Set(
+              PRODUCTS.filter(p => p.league === 'International' && !p.isIcon && getSeasonStartYear(p.season) >= 2018).map(p => p.clubName)
+            )).filter(Boolean).sort();
+            return (
+              <SelectionGrid title="National Teams · Choose a Nation" eyebrow="International"
+                items={nations.map(n => ({ key: n, label: n }))}
+                onPick={(n) => navigate('shop', { filter: { league: 'International', clubName: n } })} />
+            );
+          }
+
+          // Otherwise → show the normal jersey grid + sidebar
+          return (
         <div className="flex gap-8">
           {/* Desktop filter sidebar */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -2640,7 +2733,8 @@ const ShopPage = () => {
             )}
           </div>
         </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Mobile filter drawer */}
@@ -3893,6 +3987,8 @@ const ClubsPage = () => {
     const byLeague = {};
     for (const p of PRODUCTS) {
       if (!p.clubName || !p.league) continue;
+      if (p.league === 'International') continue; // national teams are NOT clubs
+      if (p.isIcon) continue; // icons live in their own collection
       if (!byLeague[p.league]) byLeague[p.league] = new Map();
       // Only count once per club — and prefer products with images
       if (!byLeague[p.league].has(p.clubName)) {
