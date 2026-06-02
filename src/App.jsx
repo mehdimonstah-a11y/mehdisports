@@ -2046,7 +2046,19 @@ const WorldCup2026 = () => {
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
               <div className="absolute bottom-0 inset-x-0 p-4 md:p-5">
-                <div className="text-2xl mb-1">{team.emoji}</div>
+                <div className="mb-2">
+                  <img
+                    src={NATION_CREST[team.name] || nationFlagUrl(team.name)}
+                    alt={`${team.name} crest`}
+                    loading="lazy"
+                    onError={(e) => {
+                      const flag = nationFlagUrl(team.name);
+                      if (flag && e.currentTarget.src !== flag) { e.currentTarget.src = flag; }
+                      else { e.currentTarget.style.display = 'none'; }
+                    }}
+                    className="h-7 w-auto object-contain drop-shadow-lg"
+                  />
+                </div>
                 <div className="text-white font-black uppercase tracking-tight text-base md:text-lg leading-tight">{team.name}</div>
                 <div className="mt-1.5 flex items-center justify-between">
                   <span className="text-[10px] uppercase tracking-widest text-white/40">{team.product.season || '25/26'}</span>
@@ -2101,11 +2113,70 @@ const TrustBar = () => (
   </section>
 );
 
+// ---------- CLUB / NATION BADGE MAPS ----------------------------------------
+// National team crests (Wikimedia). Fallback chain: crest → flag → lettered tile.
+const NATION_CREST = {
+  'Argentina': 'https://upload.wikimedia.org/wikipedia/en/c/c1/Argentina_national_football_team_logo.svg',
+  'Brazil': 'https://upload.wikimedia.org/wikipedia/en/d/d4/Brazilian_Football_Confederation_logo.svg',
+  'France': 'https://upload.wikimedia.org/wikipedia/en/c/c0/France_national_football_team_seal.svg',
+  'Germany': 'https://upload.wikimedia.org/wikipedia/en/b/bd/DFB-Adler.svg',
+  'Spain': 'https://upload.wikimedia.org/wikipedia/en/9/90/Spain_national_football_team_crest.svg',
+  'Italy': 'https://upload.wikimedia.org/wikipedia/en/d/d4/FIGC_logo_2017.svg',
+  'England': 'https://upload.wikimedia.org/wikipedia/en/8/8c/England_national_football_team_crest.svg',
+  'Portugal': 'https://upload.wikimedia.org/wikipedia/en/5/53/Portugal_national_football_team_logo.svg',
+  'Netherlands': 'https://upload.wikimedia.org/wikipedia/en/8/85/KNVB_logo_2017.svg',
+  'Belgium': 'https://upload.wikimedia.org/wikipedia/en/3/36/Royal_Belgian_FA_logo_2019.svg',
+  'Croatia': 'https://upload.wikimedia.org/wikipedia/en/7/7d/Croatia_national_football_team_logo.svg',
+  'Mexico': 'https://upload.wikimedia.org/wikipedia/commons/9/93/Mexico_national_football_team_crest.svg',
+  'Morocco': 'https://upload.wikimedia.org/wikipedia/en/7/72/Royal_Moroccan_Football_Federation_logo.svg',
+  'Japan': 'https://upload.wikimedia.org/wikipedia/en/c/c0/Japan_Football_Association_crest.svg',
+  'Senegal': 'https://upload.wikimedia.org/wikipedia/en/2/2e/Senegal_national_football_team_crest.svg',
+  'Canada': 'https://upload.wikimedia.org/wikipedia/en/0/04/Canada_Soccer_logo.svg',
+  'Colombia': 'https://upload.wikimedia.org/wikipedia/en/9/9e/Colombia_national_football_team_crest.svg',
+  'Ivory Coast': 'https://upload.wikimedia.org/wikipedia/en/2/2a/Ivory_Coast_Football_Federation_logo.svg',
+  'Saudi Arabia': 'https://upload.wikimedia.org/wikipedia/en/3/38/Saudi_Arabia_national_football_team_logo.svg',
+};
+// Country flag fallback via flagcdn (ISO-3166 alpha-2). Reliable, lightweight.
+const NATION_FLAG = {
+  'Argentina': 'ar', 'Brazil': 'br', 'France': 'fr', 'Germany': 'de', 'Spain': 'es',
+  'Italy': 'it', 'England': 'gb-eng', 'Portugal': 'pt', 'Netherlands': 'nl', 'Belgium': 'be',
+  'Croatia': 'hr', 'Mexico': 'mx', 'Morocco': 'ma', 'Japan': 'jp', 'Senegal': 'sn',
+  'Canada': 'ca', 'Colombia': 'co', 'Ivory Coast': 'ci', 'Saudi Arabia': 'sa', 'USA': 'us',
+  'Algeria': 'dz', 'Cameroon': 'cm', 'Denmark': 'dk', 'Greece': 'gr', 'Nigeria': 'ng',
+  'Turkey': 'tr', 'Australia': 'au', 'Bolivia': 'bo', 'Chile': 'cl', 'Ecuador': 'ec',
+  'Egypt': 'eg', 'Ghana': 'gh', 'Ireland': 'ie', 'Norway': 'no', 'Peru': 'pe',
+  'Poland': 'pl', 'Scotland': 'gb-sct', 'Slovakia': 'sk', 'Sweden': 'se', 'Switzerland': 'ch',
+  'Tunisia': 'tn', 'Uruguay': 'uy', 'Wales': 'gb-wls', 'South Korea': 'kr', 'Russia': 'ru',
+  'Jamaica': 'jm', 'Venezuela': 've',
+};
+const nationFlagUrl = (name) => NATION_FLAG[name] ? `https://flagcdn.com/w160/${NATION_FLAG[name]}.png` : null;
+
+// Club crests (Wikimedia) for retro-club selection cards.
+const CLUB_CREST = {
+  'Real Madrid': 'https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg',
+  'Barcelona': 'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg',
+  'Manchester City': 'https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg',
+  'Liverpool': 'https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg',
+  'Paris Saint-Germain': 'https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg',
+  'Bayern Munich': 'https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg',
+  'Manchester United': 'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg',
+  'Arsenal': 'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg',
+  'Chelsea': 'https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg',
+  'AC Milan': 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Logo_of_AC_Milan.svg',
+  'Inter Milan': 'https://upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg',
+  'Juventus': 'https://upload.wikimedia.org/wikipedia/commons/b/bc/Juventus_FC_2017_logo.svg',
+  'Tottenham': 'https://upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg',
+  'Napoli': 'https://upload.wikimedia.org/wikipedia/commons/2/2d/SSC_Napoli_2007.svg',
+  'Ajax': 'https://upload.wikimedia.org/wikipedia/en/7/79/Ajax_Amsterdam.svg',
+  'Aston Villa': 'https://upload.wikimedia.org/wikipedia/en/9/9a/Aston_Villa_FC_new_crest.svg',
+};
+
 // ---------- SELECTION GRID (League / Club / Nation chooser) -----------------
-const SelectionGrid = ({ title, eyebrow, items, onPick, backTo }) => {
+// Premium card grid matching the Clubs section. Supports optional crest + count.
+const SelectionGrid = ({ title, eyebrow, items, onPick, backTo, variant = 'plain' }) => {
   const { navigate } = useStore();
   return (
-    <div className="max-w-[1400px] mx-auto py-4">
+    <div className="max-w-[1600px] mx-auto py-2">
       {backTo && (
         <button onClick={() => navigate('shop', { filter: backTo })}
           className="flex items-center gap-1 text-white/50 hover:text-lime-400 text-xs uppercase tracking-widest mb-6">
@@ -2116,13 +2187,40 @@ const SelectionGrid = ({ title, eyebrow, items, onPick, backTo }) => {
         {eyebrow && <div className="text-xs uppercase tracking-[0.3em] text-amber-400 mb-2">{eyebrow}</div>}
         <h1 className="text-3xl md:text-5xl font-black uppercase text-white tracking-tighter">{title}</h1>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-        {items.map(it => (
-          <button key={it.key} onClick={() => onPick(it.key)}
-            className="group border border-white/10 hover:border-lime-400 bg-zinc-950 hover:bg-zinc-900 p-6 text-left transition-colors flex items-center justify-between">
-            <span className="text-white font-bold text-sm md:text-base">{it.label}</span>
-            <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-lime-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
-          </button>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
+        {items.map((it, i) => (
+          <motion.button key={it.key}
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: Math.min(i * 0.03, 0.3) }}
+            onClick={() => onPick(it.key)}
+            className="group relative aspect-[5/3] overflow-hidden bg-zinc-950 hover:bg-zinc-900 border border-white/5 hover:border-lime-400/40 transition-colors rounded-sm">
+            {/* Crest / badge */}
+            {it.crest && (
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 w-[40%] h-[70%] opacity-40 group-hover:opacity-90 transition-opacity flex items-center justify-center">
+                <img src={it.crest} alt={it.label} loading="lazy"
+                  onError={(e) => {
+                    if (it.flag && e.currentTarget.src !== it.flag) { e.currentTarget.src = it.flag; }
+                    else { e.currentTarget.style.display = 'none'; }
+                  }}
+                  className="w-full h-full object-contain" />
+              </div>
+            )}
+            {/* Big watermark letters */}
+            <div className="absolute -right-6 -bottom-8 text-[6rem] md:text-[8rem] font-black text-white/[0.04] leading-none pointer-events-none">
+              {it.label.slice(0, 2).toUpperCase()}
+            </div>
+            <div className="relative p-5 md:p-7 h-full flex flex-col justify-between">
+              <div>
+                {it.count != null && <div className="text-xs uppercase tracking-widest text-white/40">{it.count} {it.countLabel || 'jerseys'}</div>}
+                <div className="mt-1.5 text-xl md:text-2xl lg:text-3xl font-black text-white uppercase tracking-tight leading-tight">{it.label}</div>
+              </div>
+              <div className="flex items-end justify-end">
+                <ArrowUpRight className="w-5 h-5 text-white/40 group-hover:text-lime-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+              </div>
+            </div>
+          </motion.button>
         ))}
       </div>
     </div>
@@ -2608,9 +2706,14 @@ const ShopPage = () => {
             const leaguesWithRetro = orderLeaguesLocal(Array.from(new Set(
               PRODUCTS.filter(p => isSeasonRetro(p) && p.league !== 'International' && !p.isIcon).map(p => p.league)
             )));
+            const leagueItems = leaguesWithRetro.map(l => ({
+              key: l, label: l,
+              count: PRODUCTS.filter(p => isSeasonRetro(p) && p.league === l && !p.isIcon).length,
+              countLabel: 'retro jerseys',
+            }));
             return (
               <SelectionGrid title="Retro · Choose a League" eyebrow="Retro Clubs"
-                items={leaguesWithRetro.map(l => ({ key: l, label: l }))}
+                items={leagueItems}
                 onPick={(l) => navigate('shop', { filter: { retroClub: true, league: l } })} />
             );
           }
@@ -2619,9 +2722,15 @@ const ShopPage = () => {
             const clubs = Array.from(new Set(
               PRODUCTS.filter(p => isSeasonRetro(p) && p.league === filters.league && !p.isIcon).map(p => p.clubName)
             )).filter(Boolean).sort();
+            const clubItems = clubs.map(c => ({
+              key: c, label: c,
+              count: PRODUCTS.filter(p => isSeasonRetro(p) && p.clubName === c && !p.isIcon).length,
+              countLabel: 'retro jerseys',
+              crest: CLUB_CREST[c] || null,
+            }));
             return (
               <SelectionGrid title={`Retro · ${filters.league}`} eyebrow="Choose a Club" backTo={{ retroClub: true }}
-                items={clubs.map(c => ({ key: c, label: c }))}
+                items={clubItems}
                 onPick={(c) => navigate('shop', { filter: { retroClub: true, league: filters.league, clubName: c } })} />
             );
           }
@@ -2631,9 +2740,16 @@ const ShopPage = () => {
             const nations = Array.from(new Set(
               PRODUCTS.filter(p => isSeasonRetro(p) && p.league === 'International' && !p.isIcon).map(p => p.clubName)
             )).filter(Boolean).sort();
+            const nationItems = nations.map(n => ({
+              key: n, label: n,
+              count: PRODUCTS.filter(p => isSeasonRetro(p) && p.clubName === n && !p.isIcon).length,
+              countLabel: 'retro jerseys',
+              crest: NATION_CREST[n] || nationFlagUrl(n),
+              flag: nationFlagUrl(n),
+            }));
             return (
               <SelectionGrid title="Retro · Choose a Nation" eyebrow="Retro International"
-                items={nations.map(n => ({ key: n, label: n }))}
+                items={nationItems}
                 onPick={(n) => navigate('shop', { filter: { retroNational: true, clubName: n } })} />
             );
           }
@@ -2643,9 +2759,16 @@ const ShopPage = () => {
             const nations = Array.from(new Set(
               PRODUCTS.filter(p => p.league === 'International' && !p.isIcon && getSeasonStartYear(p.season) >= 2018).map(p => p.clubName)
             )).filter(Boolean).sort();
+            const nationItems = nations.map(n => ({
+              key: n, label: n,
+              count: PRODUCTS.filter(p => p.league === 'International' && p.clubName === n && !p.isIcon && getSeasonStartYear(p.season) >= 2018).length,
+              countLabel: 'jerseys',
+              crest: NATION_CREST[n] || nationFlagUrl(n),
+              flag: nationFlagUrl(n),
+            }));
             return (
               <SelectionGrid title="National Teams · Choose a Nation" eyebrow="International"
-                items={nations.map(n => ({ key: n, label: n }))}
+                items={nationItems}
                 onPick={(n) => navigate('shop', { filter: { league: 'International', clubName: n } })} />
             );
           }
