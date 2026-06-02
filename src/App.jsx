@@ -2272,6 +2272,8 @@ const ShopPage = () => {
     retro: !!rf.retro,
     retroClub: !!rf.retroClub,
     retroNational: !!rf.retroNational,
+    specialClub: !!rf.specialClub,
+    specialNational: !!rf.specialNational,
     careerTeams: rf.careerTeams || null,
     careerHistory: rf.careerHistory || null,
     playerCareer: rf.playerCareer || null,
@@ -2317,7 +2319,7 @@ const ShopPage = () => {
   const filtered = useMemo(() => {
     // Determine which "collection mode" we're in
     const inJackets = !!filters.jacket;
-    const inSpecial = !!filters.special;
+    const inSpecial = !!(filters.special || filters.specialClub || filters.specialNational);
     const inRetro = filters.type === 'Retro' || filters.retro || filters.retroClub || filters.retroNational;
     const inWC = !!filters.wc2026;
     const inPrematch = !!filters.prematch;
@@ -2335,6 +2337,13 @@ const ShopPage = () => {
       if (p.isJacket && !inJackets) return false;
       // Special editions ONLY appear in Special Editions
       if (p.isSpecial && !inSpecial && !inRetro) return false;
+
+      // ---- SPECIAL EDITIONS — must be a special edition, with club/national split ----
+      if (inSpecial) {
+        if (!p.isSpecial) return false;
+        if (filters.specialClub && p.league === 'International') return false;
+        if (filters.specialNational && p.league !== 'International') return false;
+      }
 
       // ---- RETRO vs CURRENT STRUCTURE — SEASON ONLY (fix 2) ----
       // A product is retro ONLY if its season is 17/18 or older. The word "Retro"
@@ -2482,6 +2491,8 @@ const ShopPage = () => {
       return y != null && y <= 2017;
     };
     if (filters.icon) return PRODUCTS.filter(p => p.isIcon);
+    if (filters.specialClub) return PRODUCTS.filter(p => p.isSpecial && p.league !== 'International' && !p.isIcon);
+    if (filters.specialNational) return PRODUCTS.filter(p => p.isSpecial && p.league === 'International' && !p.isIcon);
     if (filters.special) return PRODUCTS.filter(p => p.isSpecial && !p.isIcon);
     if (filters.jacket) return PRODUCTS.filter(p => p.isJacket && !p.isIcon);
     if (filters.retroClub) return PRODUCTS.filter(p => isSeasonRetro(p) && p.league !== 'International' && !p.isIcon);
@@ -2490,7 +2501,7 @@ const ShopPage = () => {
     if (filters.league === 'International') return PRODUCTS.filter(p => p.league === 'International' && !p.isIcon);
     // normal clubs: current (18/19+) non-icon
     return PRODUCTS.filter(p => !p.isIcon && getSeasonStartYear(p.season) >= 2018 && !p.isJacket && !p.isSpecial);
-  }, [filters.icon, filters.special, filters.jacket, filters.retro, filters.retroClub, filters.retroNational, filters.league, catalogLoaded]);
+  }, [filters.icon, filters.special, filters.specialClub, filters.specialNational, filters.jacket, filters.retro, filters.retroClub, filters.retroNational, filters.league, catalogLoaded]);
 
   // Context-aware club/nation counts (only within this section)
   const sectionClubCounts = useMemo(() => {
@@ -2644,10 +2655,12 @@ const ShopPage = () => {
               <p className="mt-2 text-white/50 text-sm">The shirts that defined the greats · name included</p>
               <p className="mt-1 text-white/40 text-xs">{filtered.length} products</p>
             </>
-          ) : filters.special ? (
+          ) : (filters.special || filters.specialClub || filters.specialNational) ? (
             <>
               <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-2">Limited & collab</div>
-              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">Special Editions</h1>
+              <h1 className="text-4xl md:text-6xl font-black uppercase text-white tracking-tighter">
+                {filters.specialClub ? 'Special · Clubs' : filters.specialNational ? 'Special · National Teams' : 'Special Editions'}
+              </h1>
               <p className="mt-2 text-white/50 text-sm">{filtered.length} products</p>
             </>
           ) : filters.jacket ? (
@@ -2793,6 +2806,84 @@ const ShopPage = () => {
               <SelectionGrid title="National Teams · Choose a Nation" eyebrow="International"
                 items={nationItems}
                 onPick={(n) => navigate('shop', { filter: { league: 'International', clubName: n } })} />
+            );
+          }
+
+          // 5) SPECIAL EDITIONS ROOT — two cards
+          if (filters.special && !filters.specialClub && !filters.specialNational && !filters.clubName && !filters.league) {
+            return (
+              <div className="max-w-3xl mx-auto py-8">
+                <div className="grid md:grid-cols-2 gap-5">
+                  <button onClick={() => navigate('shop', { filter: { specialClub: true } })}
+                    className="group border-2 border-white/10 hover:border-lime-400 bg-zinc-950 p-10 text-left transition-colors">
+                    <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-3">Limited & collab</div>
+                    <h2 className="text-3xl font-black uppercase text-white tracking-tight mb-2">Club Special Editions</h2>
+                    <p className="text-white/50 text-sm">Anniversary, collab & limited club kits — by league.</p>
+                    <ChevronRight className="w-6 h-6 text-lime-400 mt-6 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <button onClick={() => navigate('shop', { filter: { specialNational: true } })}
+                    className="group border-2 border-white/10 hover:border-lime-400 bg-zinc-950 p-10 text-left transition-colors">
+                    <div className="text-xs uppercase tracking-[0.3em] text-lime-400 mb-3">International</div>
+                    <h2 className="text-3xl font-black uppercase text-white tracking-tight mb-2">National Team Special Editions</h2>
+                    <p className="text-white/50 text-sm">Commemorative & limited national kits — by nation.</p>
+                    <ChevronRight className="w-6 h-6 text-lime-400 mt-6 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          // 5a) CLUB SPECIAL EDITIONS — no league chosen → LEAGUE grid
+          if (filters.specialClub && !filters.league && !filters.clubName) {
+            const leaguesWithSE = orderLeaguesLocal(Array.from(new Set(
+              PRODUCTS.filter(p => p.isSpecial && p.league !== 'International' && !p.isIcon).map(p => p.league)
+            )));
+            const leagueItems = leaguesWithSE.map(l => ({
+              key: l, label: l,
+              count: new Set(PRODUCTS.filter(p => p.isSpecial && p.league === l && !p.isIcon).map(p => p.clubName)).size,
+              countLabel: 'clubs',
+              crest: LEAGUE_LOGO[l] || null,
+            }));
+            return (
+              <SelectionGrid title="Special Editions · Choose a League" eyebrow="Club Special Editions"
+                items={leagueItems}
+                onPick={(l) => navigate('shop', { filter: { specialClub: true, league: l } })} />
+            );
+          }
+          // 5b) CLUB SPECIAL EDITIONS — league chosen → CLUB grid
+          if (filters.specialClub && filters.league && !filters.clubName) {
+            const clubs = Array.from(new Set(
+              PRODUCTS.filter(p => p.isSpecial && p.league === filters.league && !p.isIcon).map(p => p.clubName)
+            )).filter(Boolean).sort();
+            const clubItems = clubs.map(c => ({
+              key: c, label: c,
+              count: PRODUCTS.filter(p => p.isSpecial && p.clubName === c && !p.isIcon).length,
+              countLabel: 'special editions',
+              crest: CLUB_CREST[c] || null,
+            }));
+            return (
+              <SelectionGrid title={`Special · ${filters.league}`} eyebrow="Choose a Club" backTo={{ specialClub: true }}
+                items={clubItems}
+                onPick={(c) => navigate('shop', { filter: { specialClub: true, league: filters.league, clubName: c } })} />
+            );
+          }
+
+          // 5c) NATIONAL TEAM SPECIAL EDITIONS — no nation chosen → NATION grid
+          if (filters.specialNational && !filters.clubName) {
+            const nations = Array.from(new Set(
+              PRODUCTS.filter(p => p.isSpecial && p.league === 'International' && !p.isIcon).map(p => p.clubName)
+            )).filter(Boolean).sort();
+            const nationItems = nations.map(n => ({
+              key: n, label: n,
+              count: PRODUCTS.filter(p => p.isSpecial && p.clubName === n && !p.isIcon).length,
+              countLabel: 'special editions',
+              crest: NATION_CREST[n] || nationFlagUrl(n),
+              flag: nationFlagUrl(n),
+            }));
+            return (
+              <SelectionGrid title="Special Editions · Choose a Nation" eyebrow="National Team Special Editions"
+                items={nationItems}
+                onPick={(n) => navigate('shop', { filter: { specialNational: true, clubName: n } })} />
             );
           }
 
