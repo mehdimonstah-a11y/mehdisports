@@ -2171,6 +2171,28 @@ const CLUB_CREST = {
   'Aston Villa': 'https://upload.wikimedia.org/wikipedia/en/9/9a/Aston_Villa_FC_new_crest.svg',
 };
 
+// League logos (Wikimedia). Fallback → lettered placeholder tile.
+const LEAGUE_LOGO = {
+  'Premier League': 'https://upload.wikimedia.org/wikipedia/en/f/f2/Premier_League_Logo.svg',
+  'La Liga': 'https://upload.wikimedia.org/wikipedia/commons/1/13/LaLiga_EA_Sports_2023_Vertical_Logo.svg',
+  'Serie A': 'https://upload.wikimedia.org/wikipedia/commons/e/e1/Serie_A_logo_2022.svg',
+  'Bundesliga': 'https://upload.wikimedia.org/wikipedia/en/d/df/Bundesliga_logo_%282017%29.svg',
+  'Ligue 1': 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Ligue_1_Uber_Eats_logo.svg',
+  'Brasileirão': 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Campeonato_Brasileiro_S%C3%A9rie_A_logo.svg',
+  'Brasileirao': 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Campeonato_Brasileiro_S%C3%A9rie_A_logo.svg',
+  'Eredivisie': 'https://upload.wikimedia.org/wikipedia/commons/7/72/Eredivisie_nieuw_logo_2017-.svg',
+  'Liga MX': 'https://upload.wikimedia.org/wikipedia/commons/d/d3/Liga_MX_Logo_Alternative.svg',
+  'MLS': 'https://upload.wikimedia.org/wikipedia/commons/7/76/MLS_crest_logo_RGB_gradient.svg',
+  'Primeira Liga': 'https://upload.wikimedia.org/wikipedia/en/c/c8/Liga_Portugal_logo.svg',
+  'Saudi Pro League': 'https://upload.wikimedia.org/wikipedia/en/8/8f/Saudi_Pro_League_logo.svg',
+  'Scottish Premiership': 'https://upload.wikimedia.org/wikipedia/en/8/87/Scottish_Premiership_Logo.svg',
+  'Serbian SuperLiga': 'https://upload.wikimedia.org/wikipedia/en/9/95/Serbian_SuperLiga_logo.svg',
+  'Süper Lig': 'https://upload.wikimedia.org/wikipedia/en/9/9b/Super_Lig_logo.svg',
+  'Super Lig': 'https://upload.wikimedia.org/wikipedia/en/9/9b/Super_Lig_logo.svg',
+  'Championship': 'https://upload.wikimedia.org/wikipedia/en/d/d2/EFL_Championship.svg',
+  'Primera Division': 'https://upload.wikimedia.org/wikipedia/commons/0/0d/Liga_Profesional_de_F%C3%BAtbol_Argentina_logo.svg',
+};
+
 // ---------- SELECTION GRID (League / Club / Nation chooser) -----------------
 // Premium card grid matching the Clubs section. Supports optional crest + count.
 const SelectionGrid = ({ title, eyebrow, items, onPick, backTo, variant = 'plain' }) => {
@@ -2708,8 +2730,9 @@ const ShopPage = () => {
             )));
             const leagueItems = leaguesWithRetro.map(l => ({
               key: l, label: l,
-              count: PRODUCTS.filter(p => isSeasonRetro(p) && p.league === l && !p.isIcon).length,
-              countLabel: 'retro jerseys',
+              count: new Set(PRODUCTS.filter(p => isSeasonRetro(p) && p.league === l && !p.isIcon).map(p => p.clubName)).size,
+              countLabel: 'clubs',
+              crest: LEAGUE_LOGO[l] || null,
             }));
             return (
               <SelectionGrid title="Retro · Choose a League" eyebrow="Retro Clubs"
@@ -4219,7 +4242,7 @@ const ClubsPage = () => {
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-8 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
           {leagueData.map((league, i) => {
-            const featuredImg = getLeagueImage(league);
+            const leagueLogo = LEAGUE_LOGO[league.name];
             return (
               <motion.button
                 key={league.name}
@@ -4230,9 +4253,12 @@ const ClubsPage = () => {
                 onClick={() => { setSelectedLeague(league.name); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                 className="group relative aspect-[5/3] overflow-hidden bg-zinc-950 hover:bg-zinc-900 border border-white/5 hover:border-lime-400/40 transition-colors rounded-sm"
               >
-                {featuredImg && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[55%] h-[80%] opacity-50 group-hover:opacity-90 transition-opacity">
-                    <img src={featuredImg} alt={league.name} loading="lazy" className="w-full h-full object-contain" />
+                {/* Official league logo */}
+                {leagueLogo && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 w-[38%] h-[68%] opacity-60 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <img src={leagueLogo} alt={`${league.name} logo`} loading="lazy"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      className="w-full h-full object-contain" />
                   </div>
                 )}
                 <div className="absolute -right-8 -bottom-8 text-[7rem] md:text-[9rem] font-black text-white/[0.04] leading-none pointer-events-none">
